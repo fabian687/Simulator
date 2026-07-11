@@ -1,0 +1,871 @@
+<!DOCTYPE html>
+<html lang="ro">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Simulator Formule — Telecomunicații</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+<script src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+<style>
+  :root{
+    --bg:#0f1117; --panel:#171a24; --panel2:#1e2230; --border:#2a2f40;
+    --text:#e8eaf0; --muted:#9098ac; --accent:#6c8cff; --good:#3ecf8e; --bad:#f2555a;
+    --warn:#f7b955;
+    --cat-comdate:#6c8cff; --cat-fibra:#f78c4f; --cat-microunde:#3ecf8e; --cat-radioreleu:#c86cff; --cat-telefonie:#f7d64f; --cat-retele:#2fd4c9;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0; min-height:100vh; background:var(--bg); color:var(--text);
+    font-family:"Segoe UI",system-ui,-apple-system,sans-serif;
+    display:flex; justify-content:center; padding:24px 16px 60px;
+  }
+  .wrap{width:100%; max-width:760px;}
+  h1{font-size:1.4rem; margin:0 0 4px;}
+  .subtitle{color:var(--muted); font-size:0.88rem; margin-bottom:18px; line-height:1.5;}
+
+  .panel{
+    background:var(--panel); border:1px solid var(--border); border-radius:14px;
+    padding:18px; margin-bottom:16px;
+  }
+
+  .cats{display:flex; flex-wrap:wrap; gap:8px; margin-top:10px;}
+  .cat-chip{
+    display:flex; align-items:center; gap:6px; padding:6px 12px; border-radius:999px;
+    border:1px solid var(--border); cursor:pointer; font-size:0.82rem; user-select:none;
+    background:var(--panel2); transition:opacity .15s;
+  }
+  .cat-chip input{accent-color:var(--accent);}
+  .cat-chip.off{opacity:0.35;}
+  .cat-dot{width:9px; height:9px; border-radius:50%; flex:none;}
+
+  .toprow{display:flex; justify-content:space-between; align-items:center; gap:10px; flex-wrap:wrap;}
+  .smallbtn{
+    background:var(--panel2); border:1px solid var(--border); color:var(--text);
+    padding:5px 10px; border-radius:8px; font-size:0.78rem; cursor:pointer;
+  }
+  .smallbtn:hover{border-color:var(--accent);}
+
+  .hidden-info{
+    font-size:0.78rem; color:var(--muted); display:flex; align-items:center; gap:8px; margin-top:8px;
+  }
+  .hidden-info button{
+    background:none; border:1px solid var(--border); color:var(--muted); border-radius:8px;
+    padding:3px 9px; font-size:0.75rem; cursor:pointer;
+  }
+  .hidden-info button:hover{ border-color:var(--bad); color:var(--bad); }
+
+  .mode-switch{display:flex; gap:8px;}
+  .mode-btn{
+    background:var(--panel2); border:1px solid var(--border); color:var(--muted);
+    padding:6px 12px; border-radius:8px; font-size:0.8rem; cursor:pointer;
+  }
+  .mode-btn:hover{border-color:var(--accent);}
+  .mode-btn.active{background:var(--accent); color:#0b0d14; border-color:var(--accent);}
+  .start-hint{font-size:1.3rem;}
+
+  .progress-line{display:flex; justify-content:space-between; font-size:0.8rem; color:var(--muted); margin-bottom:6px;}
+  .bar-outer{height:7px; background:var(--panel2); border-radius:99px; overflow:hidden; border:1px solid var(--border);}
+  .bar-inner{height:100%; background:var(--accent); width:0%; transition:width .25s;}
+
+  .card{
+    background:var(--panel); border:1px solid var(--border); border-radius:16px;
+    padding:26px 22px; min-height:220px; display:flex; flex-direction:column;
+  }
+  .card-top{display:flex; justify-content:space-between; align-items:flex-start; gap:10px; margin-bottom:14px;}
+  .tier-tag{
+    align-self:flex-start; font-size:0.72rem; padding:3px 10px; border-radius:999px;
+    background:var(--panel2); color:var(--muted); border:1px solid var(--border);
+  }
+  .btn-hide{
+    flex:none; background:transparent; border:1px solid var(--border); color:var(--muted);
+    font-size:0.72rem; padding:4px 9px; border-radius:8px; cursor:pointer; white-space:nowrap;
+  }
+  .btn-hide:hover{ border-color:var(--bad); color:var(--bad); }
+  .card-cat{font-size:0.78rem; font-weight:600; margin-bottom:6px;}
+  .prompt-label{color:var(--muted); font-size:0.82rem; margin-bottom:4px;}
+  .meaning{font-size:1.12rem; line-height:1.5; margin-bottom:6px;}
+  .hint-note{color:var(--muted); font-size:0.85rem; font-style:italic;}
+
+  .divider{border-top:1px dashed var(--border); margin:18px 0;}
+
+  .reveal-box{display:none;}
+  .reveal-box.show{display:block;}
+  .condition{color:var(--warn); font-size:0.85rem; margin-bottom:8px;}
+  .formula-box{
+    background:var(--panel2); border:1px solid var(--border); border-radius:10px;
+    padding:16px; overflow-x:auto; margin-bottom:10px;
+  }
+  .plain-formula{
+    font-family:"Cascadia Code","Consolas",monospace; font-size:1.05rem; letter-spacing:.2px;
+    white-space:pre-line; line-height:1.7;
+  }
+  .note-box{font-size:0.85rem; color:var(--muted); line-height:1.5;}
+  .note-box b{color:var(--text);}
+
+  .controls{margin-top:auto; padding-top:18px; display:flex; gap:10px; flex-wrap:wrap;}
+  .btn{
+    flex:1; min-width:140px; padding:12px 14px; border-radius:10px; border:none;
+    font-size:0.95rem; font-weight:600; cursor:pointer; transition:filter .15s;
+  }
+  .btn:hover{filter:brightness(1.1);}
+  .btn-main{background:var(--accent); color:#0b0d14;}
+  .btn-good{background:var(--good); color:#0b0d14;}
+  .btn-bad{background:var(--bad); color:#0b0d14;}
+  .btn-skip{background:var(--panel2); color:var(--text); border:1px solid var(--border); flex:0 0 auto; min-width:90px;}
+
+  .stats-grid{display:grid; grid-template-columns:repeat(auto-fit,minmax(120px,1fr)); gap:10px; margin-top:12px;}
+  .stat-box{background:var(--panel2); border:1px solid var(--border); border-radius:10px; padding:10px 12px;}
+  .stat-num{font-size:1.3rem; font-weight:700;}
+  .stat-lbl{font-size:0.72rem; color:var(--muted);}
+
+  .finished{text-align:center; padding:30px 10px;}
+  .finished h2{margin-top:0;}
+
+  footer{text-align:center; color:var(--muted); font-size:0.75rem; margin-top:20px; line-height:1.6;}
+  kbd{background:var(--panel2); border:1px solid var(--border); border-radius:4px; padding:1px 6px; font-size:0.75rem;}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <h1>🎓 Simulator Formule — Telecomunicații</h1>
+  <div class="subtitle">
+    Formulele din <b>comunicatiiDate</b>, <b>fibra</b>, <b>microunde</b>, <b>radioReleu</b>, <b>telefonie</b> și <b>rețele</b> apar în ordinea priorității:
+    întâi se epuizează, amestecat, primele 15 din fiecare fișier (cele mai importante), apoi următoarele 15, ș.a.m.d.
+  </div>
+
+  <div class="panel">
+    <div class="toprow">
+      <strong style="font-size:0.85rem;">Mod</strong>
+      <div class="mode-switch" id="modeSwitch">
+        <button class="mode-btn" data-mode="meaning">Descriere</button>
+        <button class="mode-btn" data-mode="start">Începutul formulei</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="panel">
+    <div class="toprow">
+      <strong style="font-size:0.85rem;">Categorii active</strong>
+      <div style="display:flex; gap:8px;">
+        <button class="smallbtn" id="btnAll">Toate</button>
+        <button class="smallbtn" id="btnNone">Niciuna</button>
+        <button class="smallbtn" id="btnReset">🔀 Amestecă din nou</button>
+      </div>
+    </div>
+    <div class="cats" id="catList"></div>
+    <div class="hidden-info" id="hiddenInfo" style="display:none;">
+      <span id="hiddenCount"></span>
+      <button id="btnUnhide">↺ Arată din nou formulele ascunse</button>
+    </div>
+  </div>
+
+  <div class="panel">
+    <div class="progress-line">
+      <span id="tierLabel">—</span>
+      <span id="tierCount">—</span>
+    </div>
+    <div class="bar-outer"><div class="bar-inner" id="tierBar"></div></div>
+  </div>
+
+  <div class="card" id="card">
+    <!-- filled by JS -->
+  </div>
+
+  <div class="panel" style="margin-top:16px;">
+    <strong style="font-size:0.85rem;">Statistici</strong>
+    <div class="stats-grid">
+      <div class="stat-box"><div class="stat-num" id="statSeen">0</div><div class="stat-lbl">carduri văzute (sesiune)</div></div>
+      <div class="stat-box"><div class="stat-num" id="statCorrect">0</div><div class="stat-lbl">știute ✅</div></div>
+      <div class="stat-box"><div class="stat-num" id="statWrong">0</div><div class="stat-lbl">de revizuit ❌</div></div>
+      <div class="stat-box"><div class="stat-num" id="statMastered">0</div><div class="stat-lbl">stăpânite (total, toate sesiunile)</div></div>
+    </div>
+  </div>
+
+  <footer>
+    Scurtături: <kbd>Space</kbd> arată formula / următoarea &nbsp; <kbd>1</kbd> știam &nbsp; <kbd>2</kbd> nu știam &nbsp; <kbd>0</kbd> sări<br>
+    Progresul de "stăpânire" și formulele ascunse sunt salvate local în browser (localStorage). Randarea formulelor necesită conexiune la internet (KaTeX, CDN).
+  </footer>
+
+</div>
+
+<script>
+const R = String.raw;
+
+/* ================= DATE: FORMULE ================= */
+const CATEGORIES = [
+  {key:"comunicatiiDate", label:"Comunicații de date", color:"var(--cat-comdate)"},
+  {key:"fibra",           label:"Fibră optică",        color:"var(--cat-fibra)"},
+  {key:"microunde",       label:"Microunde / Linii de transmisie", color:"var(--cat-microunde)"},
+  {key:"radioReleu",      label:"Radio-releu",         color:"var(--cat-radioreleu)"},
+  {key:"telefonie",       label:"Comutație / Telefonie", color:"var(--cat-telefonie)"},
+  {key:"retele",          label:"Rețele de calculatoare", color:"var(--cat-retele)"},
+];
+
+const FORMULAS = [];
+function add(cat, p, meaning, note, opts){
+  opts = opts || {};
+  FORMULAS.push({
+    id:cat+"-"+p, cat, p, meaning, note:note||"",
+    cond: opts.cond||"", tex: opts.tex||null, plain: opts.plain||null
+  });
+}
+
+/* ---------- comunicatiiDate.md ---------- */
+add("comunicatiiDate",1,"rata de transmisie a informației","unitate: bps",{tex:R`v_t=R_b=\frac{1}{T_b}`});
+add("comunicatiiDate",2,"rata de modulație / rata de simbol","unitate: baud / Bd",{tex:R`v_m=R_s=\frac{1}{T_s}`});
+add("comunicatiiDate",3,"legătura dintre bit/s și baud","una dintre cele mai importante",{tex:R`R_b=R_s\log_2M`});
+add("comunicatiiDate",4,"numărul de biți pe simbol","M = număr de simboluri",{tex:R`N=\log_2M`});
+add("comunicatiiDate",5,"durata simbolului","pentru BPSK: T_s=T_b",{tex:R`T_s=T_b\log_2M`});
+add("comunicatiiDate",6,"bandă pe purtătoare cu cosinus ridicat","apare direct în bareme",{tex:R`B=\frac{1+\alpha}{T_s}`});
+add("comunicatiiDate",7,"factorul de exces de bandă pe purtătoare","folosești când ai B=f_i-f_j",{tex:R`\alpha=BT_s-1`});
+add("comunicatiiDate",8,"lățimea benzii din frecvențe limită","exemplu: 1.75-0.25=1.5kHz",{tex:R`B=f_i-f_j`});
+add("comunicatiiDate",9,"frecvența centrală / purtătoarea","utilă la desenul filtrului",{tex:R`f_c=\frac{f_i+f_j}{2}`});
+add("comunicatiiDate",10,"bandă de bază cu cosinus ridicat","atenție: are 2 la numitor",{tex:R`B=\frac{1+\alpha}{2T_s}`});
+add("comunicatiiDate",11,"exces de bandă în bandă de bază","nu o confunda cu formula pe purtătoare",{tex:R`\alpha=2BT_s-1`});
+add("comunicatiiDate",12,"banda filtrului Nyquist ideal în bandă de bază","pentru α=0",{tex:R`B_N=\frac{1}{2T_s}`});
+add("comunicatiiDate",13,"banda Nyquist pe purtătoare","dublul benzii de bază",{tex:R`B_N=\frac{1}{T_s}`});
+add("comunicatiiDate",14,"primul punct important la cosinus ridicat","începutul tranziției",{tex:R`f_1=\frac{1-\alpha}{2T_s}`});
+add("comunicatiiDate",15,"ultimul punct important la cosinus ridicat","limita benzii",{tex:R`f_2=\frac{1+\alpha}{2T_s}`});
+add("comunicatiiDate",16,"puncte interioare pe purtătoare","le marchezi pe grafic",{tex:R`f_c\pm\frac{1-\alpha}{2T_s}`});
+add("comunicatiiDate",17,"limitele filtrului cosinus ridicat pe purtătoare","foarte important la desen",{tex:R`f_c\pm\frac{1+\alpha}{2T_s}`});
+add("comunicatiiDate",18,"limitele filtrului Nyquist pe purtătoare","dreptunghi centrat în f_c",{tex:R`f_c\pm\frac{1}{2T_s}`});
+add("comunicatiiDate",19,"primul semnal BPSK","fază 0",{tex:R`s_1(t)=A\cos(2\pi f_ct)`});
+add("comunicatiiDate",20,"al doilea semnal BPSK","fază π",{tex:R`s_2(t)=A\cos(2\pi f_ct+\pi)`});
+add("comunicatiiDate",21,"forma simplificată BPSK","s_2(t)=-s_1(t)",{tex:R`s_2(t)=-A\cos(2\pi f_ct)`});
+add("comunicatiiDate",22,"probabilitatea de eroare BPSK","formulă foarte probabilă",{tex:R`P_e=Q\left(\sqrt{\frac{2E_b}{N_0}}\right)`});
+add("comunicatiiDate",23,"energia pe bit/simbol pentru semnal cosinusoidal","apare în demonstrații",{tex:R`E_b=\frac{A^2T_s}{2}`});
+add("comunicatiiDate",24,"probabilitatea de eroare în funcție de amplitudine","după înlocuirea lui E_b",{tex:R`P_e=Q\left(\sqrt{\frac{A^2T_s}{N_0}}\right)`});
+add("comunicatiiDate",25,"valoarea din tabelul funcției Q","pentru 10^{-5}, x≈4.27",{tex:R`x=Q^{-1}(P_e)`});
+add("comunicatiiDate",26,"amplitudinea semnalului recepționat","formulă de punctaj mare",{tex:R`A=\sqrt{\frac{x^2N_0}{T_s}}`});
+add("comunicatiiDate",27,"eficiența spectrală","bit/s/Hz",{tex:R`\eta=\frac{R_b}{B}`});
+add("comunicatiiDate",28,"eficiență spectrală în bandă de bază ideală","pentru Nyquist",{tex:R`\eta_{BB}=2\log_2M`});
+add("comunicatiiDate",29,"eficiență spectrală cu cosinus ridicat, bandă de bază","apare în baremul 2025",{tex:R`\eta_{RC,BB}=\frac{2\log_2M}{1+\alpha}`});
+add("comunicatiiDate",30,"eficiență spectrală pe purtătoare","jumătate față de bandă de bază",{tex:R`\eta_{RC,purt}=\frac{\log_2M}{1+\alpha}`});
+add("comunicatiiDate",31,"pentru Manchester","un bit are două semisimboluri",{tex:R`T_b=2T_s`});
+add("comunicatiiDate",32,"pentru Manchester","rata de modulație e dublă",{tex:R`v_m=2v_t`});
+add("comunicatiiDate",33,"spectrul impulsului Manchester","pentru subiectul cu spectru",{tex:R`X(\omega)=\frac{4Aj}{\omega}\sin^2\left(\frac{\omega T_s}{2}\right)`});
+add("comunicatiiDate",34,"spectrul de amplitudini Manchester","x=ωT_s/2",{tex:R`\left|X(\omega)\right|=2AT_s\left|\frac{\sin^2x}{x}\right|`});
+add("comunicatiiDate",35,"substituție pentru spectru","simplifică forma",{tex:R`x=\frac{\omega T_s}{2}`});
+add("comunicatiiDate",36,"zerourile spectrului Manchester","k=0,±1,±2,…",{tex:R`\omega=\frac{2k\pi}{T_s}`});
+add("comunicatiiDate",37,"zerourile spectrului în Hz","util pentru desen",{tex:R`f=\frac{k}{T_s}`});
+add("comunicatiiDate",38,"capacitate canal ideal Nyquist","secundar, dar de știut",{tex:R`C=2B\log_2M`});
+add("comunicatiiDate",39,"capacitate Shannon cu zgomot","S/N = raport semnal-zgomot",{tex:R`C=B\log_2\left(1+\frac{S}{N}\right)`});
+add("comunicatiiDate",40,"lungimea cuvântului de cod","coduri bloc",{tex:R`n=k+r`});
+add("comunicatiiDate",41,"rata codului","prioritate mai mică",{tex:R`R_c=\frac{k}{n}=\frac{k}{k+r}`});
+add("comunicatiiDate",42,"codor convoluțional cu 1 intrare și 2 ieșiri","apare la subiectul cu trellis",{tex:R`R_c=\frac{1}{2}`});
+add("comunicatiiDate",43,"ieșirea 1 la codorul convoluțional din caiet","XOR / modulo 2",{tex:R`U_1=b_i\oplus x_1\oplus x_2`});
+add("comunicatiiDate",44,"ieșirea 2 la codorul convoluțional din caiet","verifici cu schema",{tex:R`U_2=x_1\oplus x_2`});
+add("comunicatiiDate",45,"actualizarea stării la codor","pentru trellis",{tex:R`\text{stare următoare}=(b_i,x_1)`});
+
+/* ---------- fibra.md ---------- */
+add("fibra",1,"Recepție coerentă — semnalul optic primit","Formula exactă din curs. φ_n1(t) e zgomotul de fază al laserului de emisie.",{tex:R`E_S(t)=A_S(t)e^{j(\omega_S t+\varphi_S(t)+\varphi_{n1}(t))}`});
+add("fibra",2,"Recepție coerentă — oscilatorul local","Recepție homodină ⇒ ω_LO=ω_S. φ_n2(t) e zgomotul de fază propriu al oscilatorului local.",{tex:R`E_{LO}(t)=A_{LO}e^{j(\omega_{LO}t+\varphi_{n2}(t))}`});
+add("fibra",3,"Hibrid optic 90°, ramura I (ieșire 1)","Atenție: normare cu 1/2, NU cu 1/√2 — așa apare exact în curs/caiet.",{tex:R`E_1(t)=\frac{1}{2}\left(E_S(t)+E_{LO}(t)\right)`});
+add("fibra",4,"Hibrid optic 90°, ramura I (ieșire 2)","Aceeași normare 1/2, cu semnul minus.",{tex:R`E_2(t)=\frac{1}{2}\left(E_S(t)-E_{LO}(t)\right)`});
+add("fibra",5,"Hibrid optic 90°, ramura Q (ieșire 1)","j înseamnă defazaj de 90°.",{tex:R`E_3(t)=\frac{1}{2}\left(E_S(t)+jE_{LO}(t)\right)`});
+add("fibra",6,"Hibrid optic 90°, ramura Q (ieșire 2)","A doua ieșire pentru componenta Q.",{tex:R`E_4(t)=\frac{1}{2}\left(E_S(t)-jE_{LO}(t)\right)`});
+add("fibra",7,"Fotodetecție echilibrată, ramura I","Fotodiodele măsoară putere, adică |E|².",{tex:R`I_I(t)=I_{I,1}(t)-I_{I,2}(t)=R\left(|E_1(t)|^2-|E_2(t)|^2\right)`});
+add("fibra",8,"Fotodetecție echilibrată, ramura Q","Diferența elimină termenii comuni și păstrează informația utilă.",{tex:R`I_Q(t)=I_{Q,1}(t)-I_{Q,2}(t)=R\left(|E_3(t)|^2-|E_4(t)|^2\right)`});
+add("fibra",9,"Rezultat final receptor coerent — componenta I","Fără factor 2 în față (consecință a normării cu 1/2 a hibridului). R = responsivitatea fotodiodelor.",{tex:R`I_I(t)=R\sqrt{P_S(t)P_{LO}}\cos(\Delta\omega t+\varphi_S(t)+\varphi_n(t))`});
+add("fibra",10,"Rezultat final receptor coerent — componenta Q","Aceeași formă, cu sin în loc de cos.",{tex:R`I_Q(t)=R\sqrt{P_S(t)P_{LO}}\sin(\Delta\omega t+\varphi_S(t)+\varphi_n(t))`});
+add("fibra",11,"Recepție coerentă","Diferența de pulsație dintre semnal și oscilator local.",{tex:R`\Delta\omega=\omega_S-\omega_{LO}`});
+add("fibra",12,"Zgomotul de fază total la recepția coerentă","Suma zgomotului de fază al laserului de emisie și al oscilatorului local; apare direct în I_I(t), I_Q(t).",{tex:R`\varphi_n(t)=\varphi_{n1}(t)+\varphi_{n2}(t)`});
+add("fibra",13,"Emisie coerentă — semnalul din banda de bază","p(t) satisface criteriul 1 Nyquist; T_symb = perioada de simbol; s[n] = simbolul transmis la momentul nT_symb.",{tex:R`s(t)=\sum_{n=-\infty}^{\infty}s[n]\,p(t-nT_{symb})`});
+add("fibra",14,"Modulații coerente","Simbolul complex are componentă I și componentă Q.",{tex:R`a_k=I_k+jQ_k`});
+add("fibra",15,"Emisie — semnalul optic generat de laser","P_S = puterea laserului, φ(t) = zgomotul de fază (linewidth), φ0 = fază inițială aleatoare.",{tex:R`E_{in}(t)=\sqrt{P_S}\,e^{j(\omega t+\varphi(t)+\varphi_0)}`});
+add("fibra",16,"Modulator Mach-Zehnder (formula exactă din curs)","V_pp = tensiune vârf-la-vârf, V_π = tensiunea de defazaj π. NU e cos(...)+φ_b!",{tex:R`E_{out}(t)=E_{in}(t)\sin\left(\frac{V_{pp}s(t)}{2V_\pi}\pi-\frac{\pi}{2}\right)`});
+add("fibra",17,"Modulator IQ (2× MZM + defazaj π/2 pe Q)","Combină 2 modulatoare Mach-Zehnder, unul pentru I, unul pentru Q defazat cu π/2.",{tex:R`E_{out}(t)=\frac{E_{in}(t)}{2}\left[\sin\left(\frac{V_{pp}s_I(t)}{2V_\pi}\pi-\frac{\pi}{2}\right)+j\sin\left(\frac{V_{pp}s_Q(t)}{2V_\pi}\pi-\frac{\pi}{2}\right)\right]`});
+add("fibra",18,"Canalul optic (model minimal, doar efecte liniare)","H(t) = funcția de transfer a fibrei sub efecte liniare, n(t) = zgomot alb gaussian (dominat de amplificatoare).",{tex:R`E_c(t)=H(t)*E_{out}(t)+n(t)`});
+add("fibra",19,"Canal în frecvență","În frecvență, convoluția devine produs.",{tex:R`E_c(f)=E_{out}(f)H(f)+N(f)`});
+add("fibra",20,"Snell-Descartes","Formula de bază pentru refracție.",{tex:R`n_a\sin\theta_a=n_b\sin\theta_b`});
+add("fibra",21,"Unghi critic","Pentru reflexie totală internă la interfața miez–înveliș. Ex: n1=1.49, n2=1.46 → φc≈78.5°",{tex:R`\varphi_c=\arcsin\left(\frac{n_2}{n_1}\right)`});
+add("fibra",22,"Apertură numerică","Definește conul de acceptanță.",{tex:R`NA=n_0\sin\theta_a`});
+add("fibra",23,"Apertură numerică în aer","Formula cea mai importantă pentru probleme. Ex: n1=1.49 (miez), n2=1.46 (înveliș) → NA≈0.3",{tex:R`NA=\sqrt{n_1^2-n_2^2}`});
+add("fibra",24,"Unghi de acceptanță în aer","Unghiul maxim față de axa fibrei pentru ca lumina să fie ghidată.",{tex:R`\theta_a=\arcsin(NA)`});
+add("fibra",25,"OTDR, localizare eveniment","Distanța până la defect/conector/sudură. Factorul 2 = dus-întors. Ex: t=50μs, n=1.468 → L≈5.1km",{tex:R`z=\frac{ct}{2n}`});
+add("fibra",26,"OTDR, rezoluție spațială","Arată cât de aproape pot fi două evenimente ca să fie separate. Ex: τ=20ns, n=1.468 → Δz≈2.04m (evenimente mai apropiate nu pot fi separate)",{tex:R`\Delta z=\frac{c\tau}{2n}`});
+add("fibra",27,"Buget de legătură","Pierderea pe fibră în dB. Ex: α=0.22dB/km, L=120km → Af=26.4dB. (Invers: α=ΔP/L, ex. scade 1.5dB pe 5km → α=0.3dB/km)",{tex:R`A_f=\alpha L`});
+add("fibra",28,"Buget total","Aduni toate pierderile și marja. Ex: Af=26.4dB + 4conectori·0.4dB + 10suduri·0.1dB + 3dB marjă = 32dB",{tex:R`A_{total}=A_f+A_c+A_s+A_{splitter}+M`});
+add("fibra",29,"Buget fără amplificator","Puterea recepționată. Ex: Ptx=+2dBm, Atotal=32dB → Pr=-30dBm",{tex:R`P_r=P_{tx}-A_{total}`});
+add("fibra",30,"Buget cu amplificatoare","Câștigurile se adună, pierderile se scad.",{tex:R`P_r=P_{tx}+\sum G-A_{total}`});
+add("fibra",31,"Verificare funcționare","Dacă puterea primită e peste sensibilitate, legătura merge. Ex: Pr=-30dBm < Psens=-28dBm → NU merge fără amplificator!",{tex:R`P_r\geq P_{sens}`});
+add("fibra",32,"Raport semnal-zgomot","În dB/dBm se face scădere. Ex: Prec=-30dBm, Pzgomot≈-46dBm (EDFA) → SNR=16dB",{tex:R`SNR_{dB}=P_{semnal,dBm}-P_{zgomot,dBm}`});
+add("fibra",33,"Număr amplificatoare","Rotunjești în sus. În practică se pune un EDFA la fiecare ~80km pe traseu.",{tex:R`N=\left\lceil\frac{P_{sens}-P_{r,\ fără\ amp}}{G}\right\rceil`});
+add("fibra",34,"Dispersie cromatică","Lărgirea impulsului din cauza lățimii spectrale. Ex: D=17ps/(nm·km), L=60km, Δλ=0.08nm → ΔT≈81.6ps",{tex:R`\Delta T_{crom}=|D|\,L\,\Delta\lambda`});
+add("fibra",35,"Dispersie cromatică inversă","Cât de îngust spectral trebuie să fie laserul.",{tex:R`\Delta\lambda_{max}=\frac{\Delta T_{max}}{|D|\,L}`});
+add("fibra",36,"PMD","Lărgirea din cauza celor două polarizări. Ex: D_PMD=0.2ps/√km, L=100km → ΔT≈2ps",{tex:R`\Delta T_{PMD}=D_{PMD}\sqrt{L}`});
+add("fibra",37,"PMD invers","Lungimea maximă admisă pentru o limită de PMD.",{tex:R`L_{max}=\left(\frac{\Delta T_{PMD,max}}{D_{PMD}}\right)^2`});
+add("fibra",38,"Single-mode / multimode","Parametrul normalizat al fibrei.",{tex:R`V=\frac{2\pi a}{\lambda}\sqrt{n_1^2-n_2^2}`});
+add("fibra",39,"Alegerea fibrei","Dacă V e sub 2.405, fibra este monomod.",{tex:R`V<2.405\Rightarrow\text{single-mode}`});
+add("fibra",40,"Frecvența optică","La 1550nm, frecvența e aproximativ 193THz.",{tex:R`f=\frac{c}{\lambda}`});
+add("fibra",41,"Indice de refracție","Indicele arată cât de mult încetinește lumina în mediu.",{tex:R`n=\frac{c}{v}`});
+add("fibra",42,"Efect Kerr","La puteri mari, indicele depinde de intensitatea luminii.",{tex:R`n=n_0+n_2I`});
+add("fibra",43,"Citirea unui grafic OTDR (putere vs. distanță)","Apare des ca subiect de recunoaștere pe grafic la examen.",{plain:"Spike inițial → conectorul de la ieșirea OTDR-ului\nPantă → scădere continuă (împrăștiere Rayleigh)\nSalt negativ → pierdere locală (sudură)\nSpike pozitiv → conector sau ruptură\nSpike + cădere bruscă → capăt de fibră"});
+add("fibra",44,"Justificarea conectorilor APC (Angled Physical Contact)","Reflexia Fresnel parazită e deviată direct în învelișul fibrei, nu se întoarce spre sursă/receptor.",{plain:"Suprafața conectorului e tăiată oblic, la un unghi de 8°."});
+add("fibra",45,"Amplificatorul optic EDFA — caracteristici tipice","Valori de reținut pentru probleme de buget de legătură (din curs).",{plain:"Câștig mediu G ≈ 20 dB · Factor de zgomot NF ≈ 4–6 dB · Se plasează la ~80 km pe traseu"});
+add("fibra",46,"Efectele neliniare de propagare — cauză și acumulare","apar la puteri mari; se acumulează pe distanțe lungi și modifică proprietățile sticlei",{plain:"Dacă se introduce o cantitate uriașă de lumină (putere mare) prin miezul fibrei, câmpul electric al undei devine foarte mare. Aceste efecte se acumulează pe distanțe lungi și modifică proprietățile mediului (sticlei).\nConsecințe: modificări de fază, lărgire spectrală, interferențe între canale."});
+add("fibra",47,"Clasificarea efectelor neliniare (2 categorii)","prima categorie modifică indicele de refracție, a doua produce împrăștiere de fotoni",{plain:"1) Efecte de tip KERR — modifică indicele de refracție al sticlei (n=n0+n2·I)\n2) Efecte de ÎMPRĂȘTIERE — „ciocniri” foton-moleculă, cu generare de fotoni noi"});
+add("fibra",48,"Efecte de tip Kerr — cele 3 moduri","toate deformează semnalul prin modificarea indicelui de refracție cu intensitatea",{plain:"SPM (Self-Phase Modulation / auto-modulația de fază) — canalul se strică pe sine\nXPM (Cross-Phase Modulation / modulația în fază încrucișată) — strică vecinii (canalele alăturate)\nFWM (Four-Wave Mixing / compunerea a 4 unde) — generează canale parazite (interferență)"});
+add("fibra",49,"Împrăștierea Raman Stimulată (SRS)","singurul efect neliniar folosit CONSTRUCTIV în telecomunicații",{plain:"Fotonul se ciocnește de sticlă și o face să vibreze puternic la nivel molecular (generează fotoni optici).\nAre bandă foarte largă și funcționează în AMBELE direcții pe linie.\nDatorită acestui lucru, efectul e folosit constructiv în telecomunicații pentru a face amplificatoare optice (amplificare Raman)."});
+add("fibra",50,"Împrăștierea Brillouin Stimulată (SBS)","spre deosebire de SRS, e considerat un efect PERICULOS, nu folositor",{plain:"Câștigul Brillouin se propagă exclusiv ÎNAPOI (spre sursă) → periculos pentru laser (poate deteriora sursa laser prin reflexie stimulată puternică)."});
+
+/* ---------- microunde.md ---------- */
+add("microunde",1,"Coeficientul de reflexie la sarcină","probabilitate: Foarte mare",{tex:R`\Gamma_s=\frac{Z_s-Z_c}{Z_s+Z_c}`});
+add("microunde",2,"Coeficientul de reflexie la intrarea liniei","probabilitate: Foarte mare. Formă generală, valabilă și cu pierderi (α≠0). Pentru linie fără pierderi: γ=jβ ⇒ exponentul devine -j2βl (rotație de fază, |Γ_in|=|Γ_s|).",{tex:R`\Gamma_{in}=\Gamma_s e^{-2\gamma l}`});
+add("microunde",3,"Distanța de la sarcină la primul maxim de tensiune","probabilitate: Foarte mare. Apare în aproape orice problemă cu VSWR/grafic de undă staționară. φ_Γs = faza lui Γs, în radiani. Dacă Δx iese negativ, adună λg/2 (sau λg/4 pentru a ajunge la un minim).",{tex:R`\Delta x=\frac{\varphi_{\Gamma_s}\cdot\lambda_g}{4\pi}`});
+add("microunde",4,"Constanta de propagare","probabilitate: Foarte mare",{tex:R`\gamma=\alpha+j\beta`});
+add("microunde",5,"Legătura dintre fază și lungimea de undă pe linie","probabilitate: Foarte mare",{tex:R`\beta=\frac{2\pi}{\lambda_g}`});
+add("microunde",6,"Raport de undă staționară","probabilitate: Foarte mare",{tex:R`VSWR=\frac{1+|\Gamma|}{1-|\Gamma|}`});
+add("microunde",7,"Când ai VSWR și vrei reflexia","probabilitate: Foarte mare",{tex:R`|\Gamma|=\frac{VSWR-1}{VSWR+1}`});
+add("microunde",8,"Pierderi de reflexie","probabilitate: Foarte mare",{tex:R`RL[dB]=-20\log_{10}|\Gamma|`});
+add("microunde",9,"Când îți dă RL, de exemplu 20dB","probabilitate: Foarte mare",{tex:R`|\Gamma|=10^{-RL/20}`});
+add("microunde",10,"Impedanța de intrare a liniei fără pierderi","probabilitate: Foarte mare",{tex:R`Z_{in}=Z_c\frac{Z_s+jZ_c\tan(\beta l)}{Z_c+jZ_s\tan(\beta l)}`});
+add("microunde",11,"Linie în jumătate de lungime de undă","probabilitate: Foarte mare",{cond:"Pentru l=λg/2:", tex:R`Z_{in}=Z_s`});
+add("microunde",12,"Transformator în sfert de lungime de undă","probabilitate: Foarte mare",{cond:"Pentru l=λg/4:", tex:R`Z_{in}=\frac{Z_c^2}{Z_s}`});
+add("microunde",13,"Puterea reflectată la sarcină","probabilitate: Foarte mare",{tex:R`P_{r,s}=P_{i,s}|\Gamma_s|^2`});
+add("microunde",14,"Puterea transmisă / absorbită în sarcină","probabilitate: Foarte mare",{tex:R`P_s=P_{i,s}-P_{r,s}`});
+add("microunde",15,"Formula cea mai rapidă pentru puterea în sarcină","probabilitate: Foarte mare",{tex:R`P_s=P_{i,s}(1-|\Gamma_s|^2)`});
+add("microunde",16,"Când se dă P_s și trebuie puterea incidentă","probabilitate: Foarte mare",{tex:R`P_{i,s}=\frac{P_s}{1-|\Gamma_s|^2}`});
+add("microunde",17,"Linie cu pierderi","probabilitate: Mare",{tex:R`P_{i,s}=P_{i,in}e^{-2\alpha l}`});
+add("microunde",18,"Puterea reflectată propagată spre intrare","probabilitate: Mare",{tex:R`P_{r,in}=P_{r,s}e^{-2\alpha l}`});
+add("microunde",19,"Linie fără pierderi","probabilitate: Mare",{cond:"Dacă α=0:", tex:R`P_{i,s}=P_{i,in},\quad P_{r,s}=P_{r,in}`});
+add("microunde",19.5,"Puterea netă la intrarea liniei","probabilitate: Mare. E puterea care intră efectiv pe linie (diferența dintre unda incidentă și cea reflectată la intrare), nu doar P_i,in.",{tex:R`P_{in}=P_{i,in}-P_{r,in}`});
+add("microunde",20,"Randamentul transmisiei (definiție)","probabilitate: Foarte mare. Atenție: la numitor e P_in (puterea netă), NU P_i,in singură.",{tex:R`\eta=\frac{P_s}{P_{in}}`});
+add("microunde",21,"Randamentul de transmisie — formă generală","probabilitate: Foarte mare",{tex:R`\eta=\frac{1-|\Gamma_s|^2}{e^{2\alpha l}-|\Gamma_s|^2e^{-2\alpha l}}`});
+add("microunde",22,"Randamentul pentru linie fără pierderi","probabilitate: Foarte mare. Corecție importantă: dacă α=0, η=1 ÎNTOTDEAUNA, indiferent de Γs — nu contează dacă sarcina e adaptată sau nu (toată puterea netă intrată ajunge la sarcină, linia n-o disipă).",{cond:"Dacă α=0:", tex:R`\eta=1`});
+add("microunde",23,"Adaptare perfectă","probabilitate: Foarte mare",{tex:R`Z_s=Z_c\ \Rightarrow\ \Gamma_s=0,\ VSWR=1,\ RL=\infty`});
+add("microunde",24,"Puterea disponibilă a generatorului, dacă V_g este amplitudine de vârf","probabilitate: Mare",{tex:R`P_{dg}=\frac{|V_g|^2}{8R_g}`});
+add("microunde",24.5,"Tensiunea la intrarea liniei, din generator","probabilitate: Foarte mare. Divizor de tensiune: linia se comportă ca o impedanță Zin conectată la generatorul cu Vg, Zg. Apare în aproape orice problemă cu 'determinați Vg' sau 'determinați Vin'.",{tex:R`V_{in}=V_g\cdot\frac{Z_{in}}{Z_{in}+Z_g}`});
+add("microunde",25,"Generator adaptat la linie","probabilitate: Mare",{cond:"Dacă Zg=Zc:", tex:R`P_{i,in}=P_{dg}`});
+add("microunde",26,"Tensiunea totală la sarcină","probabilitate: Mare. Perechea acestei formule e V_in=V_{i,in}(1+Γ_in) — la sarcină folosești Γ_s și V_{i,s}, la intrare Γ_in și V_{i,in}.",{tex:R`V_s=V_{i,s}(1+\Gamma_s)`});
+add("microunde",27,"Tensiunea totală la intrarea liniei","probabilitate: Mare",{tex:R`V_{in}=V_{i,in}(1+\Gamma_{in})`});
+add("microunde",27.5,"Tensiunea la intrare, direct din undele de la sarcină","formă alternativă la V_in=V_{i,in}(1+Γ_in) — pornește direct de la V_{i,s} și V_{r,s} (la sarcină), fără să treci prin V_{i,in}. Atenție la semne: incident +γl (crește spre intrare), reflectat -γl (scade spre intrare).",{tex:R`V_{in}=V_{i,s}\,e^{\gamma l}+V_{r,s}\,e^{-\gamma l}`});
+add("microunde",28,"Puterea incidentă la sarcină, din amplitudinea undei incidente","probabilitate: Mare. Nu scrie niciodată doar 'P_i=' la examen — pattern-ul e generic, dar răspunsul trebuie să spună la ce capăt: P_{i,s} (aici, la sarcină) sau P_{i,in}=|V_{i,in}|²/(2Zc) (identic, la intrare).",{tex:R`P_{i,s}=\frac{|V_{i,s}|^2}{2Z_c}`});
+add("microunde",29,"Când trebuie amplitudinea undei incidente la sarcină","probabilitate: Mare. Aceeași observație: la intrare ar fi |V_{i,in}|=√(2Zc·P_{i,in}).",{tex:R`|V_{i,s}|=\sqrt{2Z_cP_{i,s}}`});
+add("microunde",30,"Maximul tensiunii pe linie","probabilitate: Mare",{tex:R`|V|_{max}=|V_i|(1+|\Gamma|)`});
+add("microunde",31,"Minimul tensiunii pe linie","probabilitate: Mare",{tex:R`|V|_{min}=|V_i|(1-|\Gamma|)`});
+add("microunde",32,"Din graficul distribuției tensiunii","probabilitate: Mare",{tex:R`VSWR=\frac{|V|_{max}}{|V|_{min}}`});
+add("microunde",33,"Distanța între două maxime consecutive","probleme cu maxime/minime pe linie",{tex:R`\frac{\lambda_g}{2}`});
+add("microunde",34,"Distanța între maxim și minim consecutiv","distribuția tensiunii/curentului",{tex:R`\frac{\lambda_g}{4}`});
+add("microunde",35,"Lungime de undă pe linie","probabilitate: Mare",{tex:R`\lambda_g=\frac{2\pi}{\beta}`});
+add("microunde",35.5,"Lungimea electrică a liniei","mărime adimensională — arată lungimea liniei RAPORTATĂ la lungimea de undă (nu în metri); determină argumentul lui tan/sin/cos din Zin, Γin etc.",{cond:"θ = numărul de lungimi de undă cuprinse în linie; echivalent în radiani, βl=2πθ:", tex:R`\theta=\frac{l}{\lambda_g}`});
+add("microunde",36,"Linie coaxială cu dielectric","probabilitate: Medie-mare",{tex:R`\lambda_g=\frac{\lambda_0}{\sqrt{\varepsilon_r}}`});
+add("microunde",37,"Lungimea de undă în vid","probabilitate: Medie-mare",{tex:R`\lambda_0=\frac{c}{f}`});
+add("microunde",38,"Determinarea frecvenței","probabilitate: Medie-mare",{tex:R`f=\frac{c}{\lambda_0}`});
+add("microunde",39,"Normare pentru diagrama Smith","probabilitate: Medie-mare",{tex:R`z=\frac{Z}{Z_c}`});
+add("microunde",40,"Denormare impedanță","probabilitate: Medie-mare",{tex:R`Z=zZ_c`});
+add("microunde",41,"Trecere impedanță → admitanță pe Smith","probabilitate: Medie-mare",{tex:R`y=\frac{1}{z}`});
+add("microunde",42,"Reactanță inductivă","probabilitate: Medie-mare",{tex:R`X_L=\omega L`});
+add("microunde",43,"Calculul inductanței","probabilitate: Medie-mare",{tex:R`L=\frac{X_L}{\omega}`});
+add("microunde",44,"Susceptanță capacitivă","probabilitate: Medie-mare",{tex:R`B_C=\omega C`});
+add("microunde",45,"Calculul capacității","probabilitate: Medie-mare",{tex:R`C=\frac{B_C}{\omega}`});
+add("microunde",46,"Reactanță capacitivă, dacă lucrezi cu impedanță","probabilitate: Medie",{tex:R`X_C=-\frac{1}{\omega C}`});
+add("microunde",47,"Conversie frecvență → pulsație","probabilitate: Medie",{tex:R`\omega=2\pi f`});
+add("microunde",48,"Parametri S","probabilitate: Medie",{tex:R`S_{11}=\Gamma_{in}\ \text{ cu portul 2 adaptat}`});
+add("microunde",49,"Parametri S","probabilitate: Medie",{tex:R`S_{22}=\Gamma_{out}\ \text{ cu portul 1 adaptat}`});
+add("microunde",50,"Când circuitul este pasiv și reciproc","probabilitate: Medie",{cond:"Rețea reciprocă:", tex:R`S_{12}=S_{21}`});
+add("microunde",51,"Când structura este simetrică","probabilitate: Medie",{cond:"Rețea simetrică:", tex:R`S_{11}=S_{22}`});
+add("microunde",52,"Frecvența de tăiere în ghid dreptunghiular","probabilitate: Medie",{tex:R`f_{c,mn}=\frac{c}{2}\sqrt{\left(\frac{m}{a}\right)^2+\left(\frac{n}{b}\right)^2}`});
+add("microunde",53,"Ghid dreptunghiular","probabilitate: Medie",{cond:"Modul dominant:", tex:R`TE_{10}`});
+add("microunde",54,"Frecvența de tăiere pentru modul dominant","probabilitate: Medie",{tex:R`f_{c,10}=\frac{c}{2a}`});
+add("microunde",55,"Condiție de propagare","verifici dacă unda se propagă",{tex:R`f>f_c`});
+add("microunde",56,"Lungimea de undă în ghid","probabilitate: Medie",{tex:R`\lambda_g=\frac{\lambda_0}{\sqrt{1-\left(\frac{f_c}{f}\right)^2}}`});
+add("microunde",57,"Constanta de defazare în ghid","probabilitate: Medie",{tex:R`\beta=k_0\sqrt{1-\left(\frac{f_c}{f}\right)^2}`});
+add("microunde",58,"Număr de undă în vid","probabilitate: Medie",{tex:R`k_0=\frac{2\pi}{\lambda_0}=\frac{\omega}{c}`});
+add("microunde",59,"Viteza de fază","probabilitate: Medie",{tex:R`v_f=\frac{\omega}{\beta}`});
+add("microunde",60,"Ghid sub frecvența de tăiere","nu se propagă, apare atenuare",{cond:"Dacă f<f_c:", tex:R`\text{nu se propagă}`});
+
+/* ---------- radioReleu.md ---------- */
+add("radioReleu",1,"Raza primei zone Fresnel — la probleme cu obstacol, vizibilitate, înălțime minimă antene","d1,d2 în km, f în GHz, R1 iese în metri",{tex:R`R_1=17.3\sqrt{\frac{d_1d_2}{f(d_1+d_2)}}`});
+add("radioReleu",2,"Curbura Pământului — la determinarea înălțimii minime a antenelor","Rezultatul este în metri, nu km",{tex:R`h_c=\frac{d_1d_2}{12.75k}`});
+add("radioReleu",3,"Condiția de eliberare Fresnel — când cere ca prima zonă Fresnel să fie liberă 60%","Profesorul urmărește explicit 0.6R1, nu tot R1",{tex:R`h_{liber}\geq0.6R_1`});
+add("radioReleu",4,"Înălțimea minimă antene — dacă antenele sunt egale și obstacolul are înălțimea h_obs","Formula asta este foarte probabilă în examen",{tex:R`h_A=h_{obs}+h_c+0.6R_1`});
+add("radioReleu",5,"Atenuarea în spațiu liber — la orice buget de legătură","f în GHz, d în km, rezultatul în dB",{tex:R`A_{FSL}=92.45+20\log_{10}f+20\log_{10}d`});
+add("radioReleu",6,"Puterea recepționată — la bugetul radio","P_E,P_R în dBm; câștigurile și atenuările în dB",{tex:R`P_R=P_E+G_E+G_R-A_{total}`});
+add("radioReleu",7,"Atenuarea totală — când ai mai multe pierderi în problemă","Atenuările sunt pozitive și se scad din buget",{tex:R`A_{total}=A_{FSL}+A_R+A_G+A_v+A_{obs}+A_{cablu}+\ldots`});
+add("radioReleu",8,"Marja de fading — când compari semnalul recepționat cu sensibilitatea receptorului","Dacă M>0, legătura merge; dacă M<0, nu merge",{tex:R`M=P_R-P_{th}`});
+add("radioReleu",9,"Atenuarea specifică de ploaie — la probleme cu ploaia","k,α se iau din tabel; γR iese în dB/km",{tex:R`\gamma_R=kR_{0.01}^{\alpha}`});
+add("radioReleu",10,"Distanța echivalentă pentru ploaie — înainte de calculul atenuării de ploaie","Ai grijă la exponent",{tex:R`d_0=35e^{-0.015R_{0.01}}`});
+add("radioReleu",11,"Distanța efectivă pentru ploaie — la atenuarea de ploaie","Mereu d_eff<d. Dacă îți iese mai mare, ai greșit",{tex:R`d_{eff}=\frac{d}{1+\frac{d}{d_0}}`});
+add("radioReleu",12,"Atenuarea de ploaie — pierderea produsă de ploaie","Intră în A_total",{tex:R`A_R=\gamma_Rd_{eff}`});
+add("radioReleu",13,"MTTR — la disponibilitate / indisponibilitate","Apare clar în caietul tău",{tex:R`MTTR=R_T+T_T+(1-p)T_R`});
+add("radioReleu",14,"Indisponibilitatea unui terminal — pentru un echipament radio","Dacă MTBF≫MTTR, atunci Ut≈MTTR/MTBF",{tex:R`U_t=\frac{MTTR}{MTBF+MTTR}`});
+add("radioReleu",15,"Indisponibilitatea unui hop — un hop are două terminale radio","Exact cum ai în caiet",{tex:R`U_{hop}=2U_t`});
+add("radioReleu",16,"Indisponibilitatea pentru 4 hopuri — pentru traseu liniar cu 4 hopuri","În serie, indisponibilitățile se adună",{tex:R`U_{4hop}=4U_{hop}`});
+add("radioReleu",17,"Disponibilitatea legăturii — după ce ai calculat indisponibilitatea","Nu confunda A cu U",{tex:R`A=(1-U)\cdot100\%`});
+add("radioReleu",18,"Atenuarea de obstacol — când obstacolul pătrunde în zona Fresnel","Atenuarea este pozitivă, ex. 22.5dB, nu -22.5dB",{tex:R`\nu=\frac{h}{R_1}\text{, apoi citești }A_{obs}\text{ din grafic}`});
+add("radioReleu",19,"Atenuarea gazelor atmosferice — oxigen + vapori de apă","γo,γw în dB/km",{tex:R`A_G=(\gamma_o+\gamma_w)d`});
+add("radioReleu",20,"Atenuarea vegetației — când legătura trece prin copaci / vegetație","αv în dB/m, dv în metri",{tex:R`A_v=\alpha_vd_v`});
+add("radioReleu",25,"Topologie liniară — rețea în serie","Dacă pică un hop, pică traseul",{tex:R`U_{total}\approx nU_{hop}`});
+add("radioReleu",30,"Diferența relativă de înălțime — tot la fading multipath","Verifică unitățile: înălțimi în m, distanță de obicei în km",{tex:R`\varepsilon=\frac{|h_E-h_R|}{d}`});
+
+/* ---------- telefonie.md ---------- */
+add("telefonie",1,"condiția de neblocare pentru Clos","când întreabă condiția de neblocare",{plain:"p ≥ a + b - 1"});
+add("telefonie",2,"valoarea minimă pentru Clos neblocabil","când cere dimensionarea optimă",{plain:"p = a + b - 1"});
+add("telefonie",3,"treapta I, intrare","când cere structura Clos",{plain:"T1: N/a module de tip a × p"});
+add("telefonie",4,"treapta II, intermediară","când cere structura Clos",{plain:"T2: p module de tip (N/a) × (M/b)"});
+add("telefonie",5,"treapta III, ieșire","atenție: este p × b, nu p × a",{plain:"T3: M/b module de tip p × b"});
+add("telefonie",6,"puncte conexiune în treapta I","calcul Clos",{plain:"Npc1 = N · p"});
+add("telefonie",7,"puncte conexiune în treapta II","calcul Clos",{plain:"Npc2 = p · (N/a) · (M/b)"});
+add("telefonie",8,"puncte conexiune în treapta III","calcul Clos",{plain:"Npc3 = M · p"});
+add("telefonie",9,"total puncte conexiune Clos","cerință foarte probabilă",{plain:"Npc Clos = Npc1 + Npc2 + Npc3"});
+add("telefonie",10,"formula directă completă","când vrei să calculezi rapid",{plain:"Npc Clos = N·p + p·(N/a)·(M/b) + M·p"});
+add("telefonie",11,"puncte conexiune matrice crossbar simplă","comparație Clos vs crossbar",{plain:"Npc crossbar = N · M"});
+add("telefonie",12,"raportul Clos/crossbar","în barem apare ca „raport”",{plain:"R = Npc Clos / Npc crossbar"});
+add("telefonie",13,"număr total de intrări la concentrator multitreaptă","când apar a, b, n",{plain:"Nin = a^n"});
+add("telefonie",14,"număr total de ieșiri la concentrator multitreaptă","când apar a, b, n",{plain:"Nout = b^n"});
+add("telefonie",15,"număr de legături după prima treaptă","în barem apare cu exemplu 18",{plain:"Nleg1 = a^(n-1) · b"});
+add("telefonie",16,"număr de legături înainte de ultima treaptă","în barem apare cu exemplu 12",{plain:"Nleg2 = b^(n-1) · a"});
+add("telefonie",17,"debit total cadru E1","telefonie digitală / PDH",{plain:"ΔE1 = 2048 kb/s"});
+add("telefonie",18,"număr de intervale temporale în E1","TS0–TS31",{plain:"NTS = 32"});
+add("telefonie",19,"fiecare time-slot are 8 biți","E1",{plain:"Nbiți/canal = 8 biți"});
+add("telefonie",20,"număr total de biți într-un cadru E1","calcul durate",{plain:"Nbiți/cadru = 32 · 8 = 256 biți"});
+add("telefonie",21,"frecvența de eșantionare","telefonie PCM",{plain:"fe = 8 kHz"});
+add("telefonie",22,"durata unui cadru E1","foarte important",{plain:"Tc = 1/fe = 125 μs"});
+add("telefonie",23,"durata unui time-slot","întrebare clasică",{plain:"TTS = Tc / 32 = 125 μs / 32 ≈ 3,9 μs"});
+add("telefonie",24,"durata unui bit în E1","calcul rapid",{plain:"Tb = Tc / 256 ≈ 488 ns"});
+add("telefonie",25,"durata multicadrului E1","TS16 / semnalizare",{plain:"Tmulticadru = 16 · Tc = 16 · 125 μs = 2 ms"});
+add("telefonie",26,"debitul unui time-slot","valabil pentru orice TS",{plain:"DTS = 8 biți / 125 μs = 64 kb/s"});
+add("telefonie",27,"debitul canalului de semnalizare TS16","semnalizare asociată",{plain:"DTS16 = 64 kb/s"});
+add("telefonie",28,"debit semnalizare pentru un canal telefonic","CAS, TS16",{plain:"Dsemnalizare/canal = 4 biți / 2 ms = 2 kb/s"});
+add("telefonie",29,"debitul unui bit individual de semnalizare","detaliu mai rar",{plain:"Dbit semnalizare = 1 bit / 2 ms = 0,5 kb/s"});
+add("telefonie",30,"dimensionare optimă module periferice","mai puțin probabil, dar apare în notițe",{plain:"moptim = √(N/2)"});
+
+/* ---------- retele.md ---------- */
+add("retele",1,"Structura fixă a subiectului „Modelul de referință TCP/IP” la examen","din analiza baremelor 2012–2024 (ATM „Ferdinand I”): apare identic în fiecare an, doar cifrele se schimbă",{plain:"a) Comparație stratificată TCP/IP vs ISO-OSI + PDU-uri + adrese (MAC/IP/port) — 1-2p\nb) Motivele succesului TCP/IP + insuccesului ISO-OSI — 1p\nc) Definiția protocolului/serviciului + protocoale reprezentative pe niveluri cu funcții — 2-2,5p\nd) FIE calcul timp transmitere mesaj (încapsulare+overhead) FIE echipamente (hub/switch/router: avantaje/dezavantaje) FIE schemă completă de adresare — 3-4,5p\n+ 1 punct din oficiu"});
+add("retele",2,"Nivelurile modelului ISO-OSI, în ordine (7→1)","ISO = International Standardization Organization; OSI = Open Systems Interconnection; standardizat în 1984",{plain:"7. Aplicație\n6. Prezentare\n5. Sesiune\n4. Transport\n3. Rețea\n2. Legătură de date\n1. Fizic"});
+add("retele",2.2,"Nivelul Prezentare (OSI) — cele trei funcții principale","PDU corespunzător = tot mesajul; nu are echivalent separat în TCP/IP (e inclus în Aplicație)",{plain:"Rezolvă problema găsirii unei forme comune de reprezentare a datelor, ca informația transmisă de nivelul Aplicație de la sursă să poată fi interpretată corect de nivelul Aplicație de la destinație.\n\n1) Codificare/decodare — stabilește sub ce formă e reprezentată informația (ex: ASCII, Unicode)\n2) Criptare/decriptare — securizează datele (ex: TLS/SSL)\n3) Comprimare/decomprimare — reduce dimensiunea datelor transmise (ex: JPEG, ZIP)"});
+add("retele",2.4,"JPEG și ASCII — format, protocol sau standard de codificare?","întrebare-capcană frecventă: nu tot ce apare la nivelul Prezentare e „protocol”",{plain:"JPEG/PNG → sunt FORMATE de fișier (nu protocoale) — rezultatul unei comprimări la nivel Prezentare\nASCII → e un STANDARD DE CODIFICARE a caracterelor (nu protocol)\nProtocol propriu-zis la nivel Prezentare → TLS/SSL, XDR, ASN.1"});
+add("retele",2.6,"Nivelul Sesiune (OSI) — rol","PDU corespunzător = tot mesajul; nu are echivalent separat în TCP/IP",{plain:"Inițiază, administrează și finalizează sesiunile de comunicație între aplicații. Nu transportă datele efective, ci gestionează CONVERSAȚIA dintre două aplicații (stabilire conexiune logică, menținere parametri, sincronizare, închidere).\nProtocoale: SIP (Session Initiation Protocol), RPC, NetBIOS Session Service"});
+add("retele",2.8,"Rolul corect al nivelului Aplicație — e chiar interfața grafică?","capcană frecventă: nivelul Aplicație NU este GUI-ul propriu-zis al programului",{plain:"NU. Interfața grafică ține de aplicația în sine (programul), nu de nivelul rețea.\nNivelul Aplicație oferă SERVICIILE/PROTOCOALELE de rețea prin care aplicațiile comunică (HTTP, DNS, SMTP etc.) — practic „punctul de contact” dintre program și rețea, nu ecranul pe care-l vede utilizatorul."});
+add("retele",3,"Nivelurile modelului TCP/IP, în ordine (4→1)","apărut ca referință practică, standard de facto al Internetului",{plain:"4. Aplicație\n3. Transport\n2. Internet\n1. Acces la rețea (Network Access = Legătură de date + Fizic)"});
+add("retele",4,"Corespondența TCP/IP ↔ ISO-OSI (stratificat, comparativ)","cea mai frecventă cerință din barem: „prezentarea stratificată a nivelurilor... comparativ” — 1-2 puncte garantate",{plain:"TCP/IP (4 niveluri)        ISO-OSI (7 niveluri)\nAplicație              ←   Aplicație\n                            Prezentare\n                            Sesiune\nTransport              ←   Transport\nInternet                ←   Rețea\nAcces la rețea          ←   Legătură de date\n                            Fizic"});
+add("retele",5,"PDU (unitatea de date) pe fiecare nivel","PDU = Protocol Data Unit; cerut explicit în barem alături de adrese",{plain:"7,6,5 Aplicație/Prezentare/Sesiune → Mesaj\n4 Transport → Segment\n3 Rețea/Internet → Pachet\n2 Legătură de date → Cadru (Frame)\n1 Fizic → Biți"});
+add("retele",6,"Adresele specifice fiecărui nivel (MAC / IP / port)","cerut explicit în barem: „adrese specifice (MAC, IP, port)”",{plain:"Nivel 2 (Legătură de date) → adresă MAC (fizică, 48 biți)\nNivel 3 (Rețea/Internet) → adresă IP (logică, 32 biți IPv4)\nNivel 4 (Transport) → număr de PORT (identifică aplicația/procesul)"});
+add("retele",7,"Definiția protocolului de comunicație","cerută aproape în fiecare an, 0,5p garantat",{plain:"Set de reguli și convenții care stabilesc modul în care două (sau mai multe) entități aflate pe același nivel, în sisteme diferite, comunică între ele prin transmiterea de informație printr-un mediu de orice tip. Definește formatul unităților de date, controlul erorilor și sincronizarea comunicației."});
+add("retele",8,"Definiția serviciului (service)","serviciul e pe verticală, protocolul e pe orizontală",{plain:"Funcționalitatea pe care un nivel inferior o oferă (o execută pentru) nivelul superior. Comunicarea pe verticală (între niveluri vecine) se face prin servicii și interfețe; comunicarea pe orizontală (între niveluri omoloage) se bazează pe protocoale."});
+add("retele",9,"Definiția interfeței + distincția protocol / serviciu / interfață","poate apărea ca întrebare separată de 0,5p",{plain:"Interfața = modul (locul) prin care un nivel superior folosește/accesează serviciile oferite de nivelul inferior.\n\nProtocol → comunicare pe ACELAȘI nivel (orizontal)\nServiciu → ce oferă un nivel inferior nivelului superior (vertical)\nInterfață → locul unde are loc schimbul de servicii/informații (vertical)"});
+add("retele",9.5,"Comunicarea între două niveluri Transport (pe dispozitive diferite) — e fizică sau logică?","capcană clasică; datele NU sar direct de la Transport la Transport",{plain:"Este LOGICĂ (virtuală), nu fizică. Comunicarea pe orizontală (între niveluri omoloage, ex: Transport-Transport) e doar conceptuală — în realitate datele coboară prin toate nivelurile până la nivelul Fizic, traversează mediul de transmisie, apoi urcă din nou prin niveluri la destinație.\nSingura comunicare cu adevărat FIZICĂ are loc la nivelul 1 (Fizic)."});
+add("retele",10,"Motivele care au dus la succesul modelului TCP/IP","0,5p garantat; apare EXACT cu acest titlu în barem",{plain:"• Interoperabilitate — permite interconectarea unei rețele cu orice altă rețea\n• Flexibilitate — pot fi aduse modificări ale protocoalelor fără modificarea rețelei\n• Rutabilitate — adresare unică\n• Funcționează pe orice tip de dispozitiv/sistem de operare\n• Schemă de adresare unică\n• Standard de facto (utilizat fără a fi impus oficial)\n• Are doar nivelurile strict necesare (4, nu 7) → protocoalele au fost acceptate rapid"});
+add("retele",11,"Motivele care au dus la insuccesul modelului ISO-OSI","0,5p garantat, pereche cu succesul TCP/IP",{plain:"• Model teoretic, de referință — NU a fost implementat de producători\n• Prea complex: 7 niveluri, dintre care sesiunea și prezentarea pot lipsi în practică\n• A fost standardizat târziu (1984), după ce TCP/IP era deja folosit (ARPANET trecuse pe TCP/IP din 1983)\n• Nu a avut aceeași adopție în implementări reale precum TCP/IP"});
+add("retele",12,"Protocoale reprezentative nivel Aplicație (TCP/IP) + funcții","barem: „pentru fiecare nivel... specificați două protocoale reprezentative indicând utilitatea”",{plain:"HTTP/HTTPS → accesarea/transferul paginilor web (HTTPS = criptat prin TLS)\nDNS → traduce numele de domeniu în adresă IP\nFTP → transfer de fișiere între 2 calculatoare\nSMTP → trimite mailuri (nu citește)\nPOP3 → primește/descarcă mailuri de pe server\nIMAP → primește mailuri, sincronizează între dispozitive (nu descarcă obligatoriu)\nDHCP → atribuie automat configurația IP\nTelnet/SSH → configurare/acces de la distanță la echipamente"});
+add("retele",12.5,"SMTP vs POP3 vs IMAP — diferența","toate 3 sunt nivel Aplicație, dar cu roluri diferite în fluxul de e-mail",{plain:"SMTP (Simple Mail Transfer Protocol) → TRIMITE e-mailuri (client→server sau server→server); NU citește/descarcă\nPOP3 (Post Office Protocol) → DESCARCĂ e-mailurile pe dispozitiv și de regulă le șterge de pe server\nIMAP (Internet Message Access Protocol) → SINCRONIZEAZĂ e-mailurile între mai multe dispozitive, fără să le descarce/șteargă obligatoriu de pe server"});
+add("retele",13,"Protocoale reprezentative nivel Transport (TCP/IP) + funcții","cele mai importante 2 protocoale ale nivelului",{plain:"TCP (Transmission Control Protocol) → orientat pe conexiune, transport fiabil, control flux+congestie, retransmisii, segmentare+ordine+confirmare\nUDP (User Datagram Protocol) → neorientat pe conexiune, rapid, fără retransmisii, fără confirmare — pentru aplicații în timp real (VoIP)"});
+add("retele",14,"Protocoale reprezentative nivel Internet (TCP/IP) + funcții","",{plain:"IP (Internet Protocol) → adresare logică și rutarea pachetelor, protocol rutat, best-effort (nu garantează livrarea)\nICMP (Internet Control Message Protocol) → mesaje de eroare și diagnosticare (ex: ping)\nRIP/OSPF/BGP → protocoale de rutare dinamică (dirijează pachetele optim către destinație)"});
+add("retele",14.5,"IP (protocol rutat) vs RIP/OSPF/BGP (protocoale de rutare) — diferența","confuzie frecventă: „rutat” ≠ „de rutare”",{plain:"IP → protocol RUTAT: e transportat/dirijat prin rețea, se ocupă de adresarea pachetelor (cine e sursa, cine e destinația)\nRIP, OSPF, BGP → protocoale DE RUTARE: stabilesc CUM aleg routerele calea optimă (construiesc/actualizează tabelele de rutare)\n\nPe scurt: IP e „pasagerul”, RIP/OSPF/BGP sunt „GPS-ul” routerului."});
+add("retele",14.7,"Ce înseamnă că IP este „best effort”?","motivul pentru care nivelurile superioare (TCP) trebuie să asigure fiabilitatea",{plain:"IP încearcă să livreze pachetele către destinație, dar NU garantează livrarea, ordinea sau absența erorilor.\nDacă un pachet se pierde, e duplicat sau ajunge în altă ordine, IP nu face nimic pentru a corecta asta — responsabilitatea revine nivelurilor superioare (ex: TCP, prin confirmări și retransmisii)."});
+add("retele",15,"Protocoale reprezentative nivel Acces la rețea (TCP/IP) + funcții","",{plain:"Ethernet → transmiterea cadrelor într-o rețea LAN prin cablu\nWi-Fi → transmiterea cadrelor fără fir\nARP (Address Resolution Protocol) → determină adresa MAC asociată unei adrese IP în rețeaua locală\nPPP → conexiuni punct-la-punct"});
+add("retele",15.5,"În ce forme fizice pot fi transmiși biții? Ce se întâmplă cu cadrul la nivelul Fizic?","nivelul Fizic NU mai lucrează cu cadre, ci cu un flux brut de biți",{plain:"Forme fizice ale semnalului: electric (impulsuri de tensiune pe cablu de cupru), optic (impulsuri de lumină pe fibră optică), electromagnetic (unde radio, la transmisia fără fir).\n\nLa nivelul Fizic, cadrul primit de la nivelul 2 este convertit într-un flux de biți (0 și 1) și transmis ca semnal (electric/optic/radio) pe mediul de transmisie — nivelul Fizic nu mai „vede” structura cadrului, doar biți."});
+add("retele",15.7,"Protocoale/standarde reprezentative pe toate cele 7 niveluri ISO-OSI (variantă de rezervă)","pentru examen, varianta SIGURĂ e să dai protocoalele pe cele 4 niveluri TCP/IP (cardurile anterioare) — tabelul ăsta e backup, dacă subiectul cere explicit nivelurile OSI",{plain:"7 Aplicație → HTTP/HTTPS, DNS, SMTP, FTP\n6 Prezentare → TLS/SSL, XDR, ASN.1 (JPEG/PNG sunt FORMATE, nu protocoale)\n5 Sesiune → SIP, RPC, NetBIOS Session Service\n4 Transport → TCP, UDP, SCTP\n3 Rețea → IP, ICMP, OSPF, RIP\n2 Legătură de date → Ethernet, Wi-Fi MAC, PPP, HDLC\n1 Fizic → Ethernet PHY, Wi-Fi PHY, RS-232, 1000BASE-T (aici sunt mai degrabă STANDARDE decât protocoale clasice)"});
+add("retele",16,"Procesul de încapsulare (la sursă)","la fiecare nivel se adaugă un antet (uneori și trailer) cu informații de control",{plain:"Mesaj → Segment (adaugă antet Transport, ex: port sursă/destinație)\n→ Pachet (adaugă antet Rețea, ex: IP sursă/destinație)\n→ Cadru (adaugă antet+trailer Legătură de date, ex: MAC sursă/destinație + FCS)\n→ Biți (flux transmis pe mediul fizic)"});
+add("retele",17,"Procesul de decapsulare (la destinație)","",{plain:"Biți → Cadru → Pachet → Segment → Mesaj\nSe elimină pe rând antetele (headerele) de la fiecare nivel, pentru recuperarea informației utile."});
+add("retele",18,"Conținutul antetelor HC / HR / HT","notație din curs pentru antetul Cadrului, Rețelei(IP), Transportului",{plain:"HC (antetul cadrului, nivel 2) → conține MAC sursă + MAC destinație (+ FCS în trailer)\nHR (antetul pachetului IP, nivel 3) → conține IP sursă + IP destinație (+TTL, protocol)\nHT (antetul segmentului, nivel 4) → conține port sursă + port destinație"});
+add("retele",18.3,"CRC vs FCS — diferența + ce se întâmplă dacă nu corespund","confuzie frecventă: CRC e algoritmul, FCS e rezultatul stocat în cadru",{plain:"CRC (Cyclic Redundancy Check) → ALGORITMUL/calculul folosit pentru a detecta erori (o împărțire polinomială aplicată pe conținutul cadrului)\nFCS (Frame Check Sequence) → CÂMPUL din trailer-ul cadrului unde e stocat REZULTATUL acelui calcul CRC, făcut de emițător\n\nLa destinație se recalculează CRC-ul pe cadrul primit și se compară cu valoarea din FCS: dacă NU corespund → cadrul e considerat eronat și e ARUNCAT (discard); nivelul 2 nu îl corectează, doar îl elimină — retransmisia (dacă e nevoie) e responsabilitatea nivelurilor superioare (ex: TCP)."});
+add("retele",18.6,"Nivelul Legătură de date corectează direct erorile sau doar le detectează?","distincție testată des: detecție ≠ corecție",{plain:"DOAR le DETECTEAZĂ (prin CRC/FCS), NU le corectează.\nDacă un cadru e eronat, nivelul 2 îl aruncă pur și simplu (nu încearcă să-l repare). Corectarea efectivă a erorilor (prin retransmisie) e realizată la nivelul Transport (TCP), pe baza numerelor de secvență și a confirmărilor (ACK)."});
+add("retele",18.9,"FCS se află în antetul cadrului sau la finalul lui (trailer)?","capcană frecventă: FCS NU e în antet (header), e în TRAILER",{plain:"FCS este în TRAILER (la finalul cadrului), nu în antet.\nStructura unui cadru: [Antet (header): MAC sursă, MAC destinație, ...] [Date utile] [Trailer: FCS]\nRolul FCS: permite destinatarului să verifice, prin recalcularea CRC, dacă cadrul a ajuns fără erori de transmisie."});
+add("retele",19,"Transferul unui mesaj între 2 echipamente finale situate în rețele diferite","cerința (c) din barem — se cere descrierea completă a fluxului",{plain:"1. Sursa încapsulează mesajul, adăugând la fiecare nivel antetul specific (Transport→Rețea→Legătură date)\n2. Cadrul e trimis către gateway (routerul local), pe baza adresei MAC a routerului\n3. Routerul decapsulează până la nivel 3, verifică IP destinație în tabela de rutare, alege ruta/next-hop\n4. Routerul re-încapsulează cu un NOU antet de nivel 2 (MAC sursă=router, MAC destinație=next-hop) și retransmite\n5. Se repetă la fiecare router intermediar, până cadrul ajunge la routerul din rețeaua destinație\n6. Ultimul router trimite cadrul direct către echipamentul final (MAC destinație = echipamentul final)\n7. La destinație are loc decapsularea completă, până la mesajul original"});
+add("retele",20,"De ce se schimbă adresele MAC la fiecare hop, dar IP/portul rămân constante","observație-cheie, des cerută implicit la punctul (c)",{plain:"MAC = adresă de nivel 2, are domeniu LOCAL (doar în rețeaua locală) → la fiecare router, cadrul vechi e eliminat și se creează un cadru nou cu alte adrese MAC (sursă=echipamentul curent, destinație=următorul hop).\nIP și portul = adrese de capăt-la-capăt (end-to-end), rămân neschimbate pe tot traseul, indiferent de câte routere traversează pachetul."});
+add("retele",20.5,"TTL (Time To Live) — rol, ce se întâmplă la fiecare router și la valoarea 0","câmp în antetul IP (nivel Rețea); previne circulația la infinit a pachetelor în caz de buclă de rutare",{plain:"Rol: limitează numărul maxim de routere (hop-uri) prin care poate trece un pachet, ca să nu circule la nesfârșit dacă apare o buclă de rutare.\n\nLa fiecare router traversat → TTL SCADE cu 1.\nCând TTL ajunge la 0 → routerul ARUNCĂ pachetul (nu îl mai retransmite) și trimite înapoi sursei un mesaj ICMP „Time Exceeded”."});
+add("retele",21,"Numărul de PDU-uri necesare pentru transmiterea unui mesaj","primul pas ÎNTOTDEAUNA la problema cu timpul de transmitere",{cond:"M = mesaj (octeți), D = date utile pe PDU (payload):", tex:R`N=\left\lceil\frac{M}{D}\right\rceil`});
+add("retele",21.3,"CAPCANĂ: cum rotunjim N când mesajul nu se împarte exact la dimensiunea unei PDU?","ÎNTOTDEAUNA în sus (ceil), niciodată în jos sau la cel mai apropiat întreg",{plain:"N = ⌈M/D⌉ — rotunjire ÎN SUS, obligatoriu.\nExemplu: M=4500B, D=1000B → 4500/1000=4,5 → N=5 (nu 4!).\nExemplu: M=4501B, D=1000B → 4,501 → N=5 la fel (orice rest, oricât de mic, mai adaugă o PDU întreagă — nu poți trimite „jumătate de pachet”)."});
+add("retele",21.6,"CAPCANĂ: antetele se adaugă o singură dată pentru tot mesajul sau la FIECARE PDU?","cea mai frecventă greșeală la problemele de calcul cu încapsulare",{plain:"La FIECARE PDU (nu o singură dată pentru tot mesajul!). De-aia formulele conțin N·antet, nu doar antet:\nd4 = M + N·H_transport (nu M + H_transport)\nCu cât mesajul e împărțit în mai multe PDU-uri, cu atât overhead-ul total crește proporțional cu N."});
+add("retele",21.8,"CAPCANĂ: ultima PDU (incompletă) mai primește antet complet?","greșeală frecventă: se uită antetul ultimei PDU pentru că „nu e plină”",{plain:"DA — ultima PDU poate avea mai PUȚINE date utile, dar tot primește antetul COMPLET, la fel ca celelalte.\nExemplu: M=4500B, D=1000B → N=5\nPDU 1–4: 1000B date utile fiecare\nPDU 5: doar 500B date utile\nDar toate cele 5 PDU-uri primesc câte un antet întreg — overhead-ul se calculează tot ca N×antet, nu (N-1)×antet."});
+add("retele",22,"Date totale la nivelul Transport (după adăugarea antetului de transport)","",{cond:"d4 = date la nivel 4 (Transport):", tex:R`d_4=M+N\cdot H_{transport}`});
+add("retele",23,"Date totale la nivelul Rețea/Internet","",{cond:"d3 = date la nivel 3 (Rețea/Internet):", tex:R`d_3=d_4+N\cdot H_{retea}`});
+add("retele",24,"Date totale la nivelul Legătură de date (include și FCS)","FCS se adaugă DOAR la nivelul 2, nu la celelalte niveluri intermediare",{cond:"d2 = date la nivel 2 (Legătură de date):", tex:R`d_2=d_3+N\cdot(H_{leg.date}+FCS)`});
+add("retele",24.5,"CAPCANĂ: la calculul timpului de transmisie, în ce unitate trebuie datele?","cea mai frecventă greșeală de „ultim pas”: se uită conversia octeți→biți",{plain:"Timpul de transmisie se calculează cu date în BIȚI, nu în octeți — viteza interfeței (Mbps) e mereu în biți/secundă.\n1 octet (B) = 8 biți (b) → înainte de a împărți la viteză, înmulțești întotdeauna cantitatea de date cu 8."});
+add("retele",25,"Date totale la nivelul Fizic (în biți)","",{cond:"d1 = date la nivel 1 (Fizic), rezultatul e în biți:", tex:R`d_1=d_2\times8`});
+add("retele",25.5,"CAPCANĂ: 10 Mbps înseamnă 10×10⁶ sau 10×1024² biți/secundă?","diferă de convenția pentru memorie (KB/MB cu 1024) — la viteze de transmisie se folosește mereu decimal",{plain:"10 Mbps = 10 × 10⁶ biți/secundă = 10.000.000 b/s (ZECIMAL).\nNU 10×1024² (asta e convenția pentru capacitate de memorie/stocare, nu pentru viteze de transmisie).\nÎn problemele de comunicații, Mbps/Gbps se tratează mereu zecimal (10³, 10⁶, 10⁹)."});
+add("retele",26,"Timpul minim de transmitere a mesajului","se împarte la viteza MAXIMĂ a interfeței (ex: FastEthernet=100Mbps)",{tex:R`t_{min}=\frac{d_1}{v_{interfață}}`});
+add("retele",27,"Exemplu complet rezolvat — timp transmitere mesaj 100MB (identic cu modelul de anul trecut și baremul 2020/2021)","M=100MB, fereastră/payload=1000B, antet=20B×3 niveluri intermediare, FCS grad 32 (=4 octeți), interfață FastEthernet=100Mbps",{plain:"N = 100·10⁶B / 1000B = 100.000 PDU-uri\nd4 = M + N·20 = 100.000.000 + 2.000.000 = 102.000.000 B\nd3 = d4 + N·20 = 102.000.000 + 2.000.000 = 104.000.000 B\nd2 = d3 + N·(20+4) = 104.000.000 + 2.400.000 = 106.400.000 B\nd1 = d2 × 8 = 851.200.000 biți\nt_min = d1 / 100.000.000 bps = 8,512 secunde"});
+add("retele",27.5,"Ce este overhead-ul (în general, la transmiterea datelor)?","concept folosit la toate problemele de calcul cu antete/eficiență",{plain:"Informația SUPLIMENTARĂ adăugată datelor utile, necesară pentru controlul transmiterii, adresare, rutare, verificarea erorilor și identificarea aplicațiilor.\nExemple: antetul TCP/UDP, antetul IP, antetul Ethernet, trailerul FCS — toate sunt overhead, nu date utile propriu-zise."});
+add("retele",28,"Eficiența transmisiei (%)","exemplu: date utile=5000B, total transmis=5300B → eficiență≈94,34%",{tex:R`\eta_{transmisie}=\frac{\text{date utile}}{\text{total transmis}}\times100\%`});
+add("retele",29,"Supraîncărcarea / overhead-ul transmisiei (%)","complementara eficienței: 100% − eficiență; exemplu: 100−94,34=5,66%",{tex:R`\text{Overhead}[\%]=\frac{\text{total transmis}-\text{date utile}}{\text{date utile}}\times100\%`});
+add("retele",29.5,"Rezolvă singur: mesaj 6500B, date utile/PDU=1500B, overhead/PDU=70B, viteză=20Mbps → N, overhead total, total transmis, timp, eficiență","problemă completă de verificare — încearcă înainte să dai reveal",{plain:"N = ⌈6500/1500⌉ = ⌈4,33⌉ = 5 PDU-uri\nOverhead total = N × 70 = 5×70 = 350 B\nTotal transmis = 6500 + 350 = 6850 B\nTimpul = (6850×8) / (20×10⁶) = 54.800 / 20.000.000 = 0,00274 s = 2,74 ms\nEficiența = 6500/6850 × 100 ≈ 94,89%"});
+add("retele",30,"Echipament nivel 1 — Hub / Repetor: rol + avantaje/dezavantaje","cerut recurent la punctul (d): „nivel 1 – hub/repetor – specificați avantaje/dezavantaje”",{plain:"REPETOR — cel mai simplu echipament, nivel Fizic. Primește semnalul slăbit, îl regenerează (nu îl amplifică, îl reconstruiește bit cu bit) și îl retransmite. Nu analizează datele.\nAvantaj: mărește distanța unei rețele.\nDezavantaj: nu filtrează traficul, nu separă domenii de coliziune.\n\nHUB = repetor multiport (nivel Fizic). Preia datele de pe un port și le transmite pe TOATE celelalte porturi, fără să analizeze traficul.\nAvantaj: simplu, ieftin.\nDezavantaje: fără memorie, fără tabelă MAC, nu filtrează traficul → generează coliziuni, nu separă domenii de broadcast/coliziune."});
+add("retele",31,"Echipament nivel 2 — Switch/Comutator: rol + avantaje/dezavantaje","",{plain:"Echipament de nivel Legătură de date. Conectează dispozitive din aceeași rețea locală (LAN) și trimite cadrele DOAR către destinatar, pe baza adresei MAC (tabela CAM). Dacă nu știe destinația → face flooding (broadcast pe toate porturile, mai puțin cel de recepție).\nAvantaje: separă domenii de coliziune, reduce traficul inutil, viteză mare.\nDezavantaje: nu separă domenii de broadcast, tabela CAM limitată ca dimensiune, cost mai mare decât hub-ul."});
+add("retele",32,"Echipament nivel 3 — Router/Ruter: rol + avantaje/dezavantaje","",{plain:"Echipament de nivel Rețea. Interconectează 2 sau mai multe rețele diferite și trimite pachetele către destinație pe baza adresei IP, alegând ruta din tabela de rutare (rute locale, direct conectate, statice/dinamice).\nAvantaje: separă domenii de broadcast, permite interconectarea rețelelor diferite, alege calea optimă.\nDezavantaje: mai lent decât switch-ul (procesare mai complexă), mai scump, introduce latență suplimentară."});
+add("retele",32.5,"De ce are routerul adrese IP diferite pe interfețele sale?","spre deosebire de switch, care are o singură identitate MAC/rețea",{plain:"Fiecare interfață a routerului este conectată la o rețea/subrețea DIFERITĂ, iar o adresă IP trebuie să aparțină rețelei din care face parte fizic interfața respectivă.\nRouterul separă domenii de broadcast diferite — deci fiecare interfață are propriul ei spațiu de adresare, cu propria adresă de rețea, mască și, eventual, gateway."});
+add("retele",33,"Switch vs Hub — diferențe cheie","",{plain:"SWITCH: nivel Legătură de date · trimite cadrul DOAR către destinatar (pe baza MAC) · dacă nu cunoaște MAC-ul, face flooding + declanșează ARP\nHUB: nivel Fizic · trimite ÎNTOTDEAUNA broadcast (către toate porturile) · nu filtrează traficul, nu are tabelă MAC"});
+add("retele",34,"Modul de funcționare al switch-ului (pas cu pas)","",{plain:"1. Primește un cadru de la un echipament terminal\n2. Analizează tabela CAM (MAC): dacă MAC sursă nu e înregistrat, îl adaugă (+ portul de recepție)\n3. Analizează MAC destinație:\n   • dacă îl găsește în tabelă → trimite cadrul DOAR pe portul asociat\n   • dacă NU îl găsește → face flooding: trimite un ARP Request de tip broadcast pe toate porturile (mai puțin cel de recepție)\n4. Switch-ul învață adresa MAC destinație din ARP Reply și o înscrie în tabelă, alături de interfața pe care a primit-o"});
+add("retele",35,"Modul de funcționare al router-ului (pas cu pas)","",{plain:"1. Routerul primește pachetul și verifică antetul acestuia pentru IP destinație\n2. Caută în tabela de rutare dacă are o rută către rețeaua în care trebuie să ajungă pachetul\n3a. Dacă găsește ruta → transmite pachetul către următorul next-hop (conform tabelei de rutare)\n3b. Dacă NU găsește ruta → anulează (dropează) pachetul"});
+add("retele",35.5,"Fișă rapidă: Nivel → PDU → Adresă → Echipament reprezentativ (L1–L4)","răspunde direct la formatul „completează L1→__, L2→__→__→__” din foile de recapitulare",{plain:"L1 Fizic → Biți → (fără adresă) → Repetor/Hub\nL2 Legătură de date → Cadru → MAC → Switch\nL3 Rețea/Internet → Pachet → IP → Router\nL4 Transport → Segment → Port → (nu are echipament dedicat — funcție a echipamentelor terminale)"});
+add("retele",36,"Adresa IP — definiție + structură","IP = Internet Protocol; adresă logică (spre deosebire de MAC=adresă fizică)",{plain:"Adresă LOGICĂ unică atribuită unei interfețe de rețea, folosită pentru identificarea dispozitivului și pentru rutarea pachetelor între rețele.\n\nStructură: NNN...NN HHH...HH\n  N = biți de rețea (Network ID)\n  H = biți de host (Host ID)\n  N + H = 32 biți (IPv4)"});
+add("retele",37,"IPv4 — caracteristici","",{tex:R`\text{IPv4}:\ 32\text{ biți}=4\text{ octeți}\ \Rightarrow\ 2^{32}\approx4{,}2\text{ miliarde adrese}`});
+add("retele",38,"Clasele de adrese IP (A, B, C, D, E)","",{plain:"Clasa A: 0.0.0.0 – 127.255.255.255, prefix 0, mască /8 (255.0.0.0), 8 biți rețea + 24 biți host\nClasa B: 128.0.0.0 – 191.255.255.255, prefix 10, mască /16 (255.255.0.0), 16+16 biți\nClasa C: 192.0.0.0 – 223.255.255.255, prefix 110, mască /24 (255.255.255.0), 24+8 biți\nClasa D: 224.0.0.0 – 239.255.255.255, prefix 1110, folosită pentru multicast\nClasa E: 240.0.0.0 – 255.255.255.255, rezervată experimental/testare"});
+add("retele",39,"Adresele private pentru fiecare clasă","rețele care NU sunt rutabile direct pe Internet",{plain:"Clasa A privată: 10.0.0.0 – 10.255.255.255 (mască /8)\nClasa B privată: 172.16.0.0 – 172.31.255.255 (mască /12)\nClasa C privată: 192.168.0.0 – 192.168.255.255 (mască /16)"});
+add("retele",40,"Adresa de rețea vs adresa de broadcast vs adresă alocabilă","",{plain:"Adresa de REȚEA → toți biții de host = 0 → NU poate fi alocată unui echipament (identifică rețeaua)\nAdresa de BROADCAST → toți biții de host = 1 → NU poate fi alocată unui echipament (mesaj către toate dispozitivele din rețea)\nAdresă ALOCABILĂ → orice adresă între cele două (poate fi atribuită unei interfețe/host)"});
+add("retele",41,"Masca de rețea (subnet mask) — rol","",{plain:"Șir de 32 biți: un șir de biți de 1 (rețea) urmat de un șir de biți de 0 (host).\nRol: identifică prin ȘI logic (AND) între mască și adresa IP dacă un dispozitiv aparține unei anumite rețele/interfețe.\nBiții de 1 → definesc rețeaua; biții de 0 → definesc numărul maxim de host-uri."});
+add("retele",42,"Numărul de adrese alocabile (host-uri utilizabile) dintr-o rețea","",{cond:"h = numărul de biți de host; se scad adresa de rețea și cea de broadcast:", tex:R`N_{alocabile}=2^{h}-2`});
+add("retele",42.5,"Tabel rapid: prefix CIDR → mască → biți de host → adrese utilizabile","memorezi o dată tabelul, nu mai recalculezi de fiecare dată",{plain:"/24 → 255.255.255.0   → 8 biți host → 254 utilizabile\n/25 → 255.255.255.128 → 7 biți host → 126 utilizabile\n/26 → 255.255.255.192 → 6 biți host → 62 utilizabile\n/27 → 255.255.255.224 → 5 biți host → 30 utilizabile\n/28 → 255.255.255.240 → 4 biți host → 14 utilizabile\n/29 → 255.255.255.248 → 3 biți host → 6 utilizabile\n/30 → 255.255.255.252 → 2 biți host → 2 utilizabile (folosit pt. legături punct-la-punct)\n/20 → 255.255.240.0   → 12 biți host → 4094 utilizabile"});
+add("retele",42.7,"De ce formula 2^h−3 NU este formula standard pentru hosturi utilizabile? (+ exemplu: LAN cu 30 PC-uri + gateway, merge pe /27?)","greșeală frecventă: se crede că gateway-ul are nevoie de o adresă ÎN PLUS față de 2^h−2",{plain:"Formula STANDARD rămâne 2^h−2 (se scad doar adresa de rețea și cea de broadcast). Gateway-ul NU se scade separat — el ocupă pur și simplu UNA dintre cele 2^h−2 adrese utilizabile, ca orice alt host.\n\nExemplu: 30 calculatoare + 1 gateway = 31 adrese TOTAL necesare.\n/27 oferă doar 2⁵−2=30 utilizabile → NU AJUNGE (lipsește exact 1 adresă, cea a gateway-ului).\nSe alege /26 (2⁶−2=62 utilizabile) → ajunge cu loc de rezervă."});
+add("retele",43,"Adresa de loopback","",{plain:"127.0.0.0/8 (folosită tipic 127.0.0.1) → reprezintă „adresa mea” (localhost), folosită pentru testare locală. NU face parte din intervalul utilizabil al clasei A, deși e cuprinsă în ea."});
+add("retele",44,"Default Gateway — definiție","",{plain:"Nod de rețea (interfața routerului) care servește ca punct de acces către o altă rețea. Reprezintă adresa IP la care ajung pachetele ce au ca destinație host-uri din afara rețelei locale.\nPrin convenție, poate fi: prima adresă alocabilă din rețea SAU ultima adresă alocabilă din rețea."});
+add("retele",44.5,"Gateway-ul implicit trebuie să fie în aceeași subrețea cu hostul?","condiție obligatorie, altfel hostul nu poate ajunge la gateway prin ARP/legătură locală",{plain:"DA. Gateway-ul (adresa IP a interfeței routerului) trebuie să facă parte din aceeași rețea/subrețea ca hostul, altfel hostul nu-l poate contacta direct (nu ar putea afla adresa lui MAC prin ARP, care funcționează doar în rețeaua locală)."});
+add("retele",45,"Subnetarea — motiv + noțiunea CIDR","",{plain:"A apărut din cauza utilizării ineficiente și epuizării adreselor IP din clasele A, B, C (care impun o mască fixă).\nPermite crearea de rețele mai mici, mai ușor de administrat, mai eficiente și mai sigure.\nCIDR (Classless Inter-Domain Routing) = notația adresă IP + subnet mask, fără apartenență la o clasă fixă (adrese „classless”)."});
+add("retele",46,"Formulele de bază pentru subnetare (VLSM)","/a → /b înseamnă împrumutarea a (b-a) biți din partea de host",{tex:R`\text{nr. subrețele}=2^{(b-a)}\qquad\text{nr. total adrese/subrețea}=2^{(32-b)}`});
+add("retele",46.5,"În VLSM, cu ce subrețea (cerință) începem alocarea?","ordinea contează — greșită → apar suprapuneri de adrese",{plain:"Se începe ÎNTOTDEAUNA cu cerința cea MAI MARE (cele mai multe host-uri necesare), apoi se continuă descrescător.\nMotiv: blocurile mai mari trebuie aliniate la începutul spațiului de adrese disponibil; dacă aloci întâi blocuri mici, riști să nu mai ai loc pentru un bloc mare aliniat corect mai târziu."});
+add("retele",47,"Algoritmul de rezolvare a unei probleme de subnetare","",{plain:"1. Identifică masca cerută (câți biți sunt „full” = 255, care e octetul „problematic”)\n2. Bloc = 256 − valoarea octetului problematic din mască\n3. Subrețelele cresc din „bloc” în „bloc”, în octetul problematic\n4. Găsește între ce doi multipli de „bloc” se încadrează adresa IP dată\n5. Adresa de rețea = multiplul inferior; Broadcast = multiplul superior − 1; Host-uri = tot ce e între ele"});
+add("retele",47.5,"Exemplu rezolvat: pentru rețeaua 192.168.10.0/24, care e broadcastul și intervalul hosturilor valide?","/24 → 8 biți de host → 2⁸−2=254 hosturi valide",{plain:"Rețea: 192.168.10.0\nBroadcast: 192.168.10.255 (ultima adresă, toți biții de host pe 1)\nHosturi valide: 192.168.10.1 – 192.168.10.254 (254 adrese alocabile)"});
+add("retele",47.6,"Exemplu rezolvat: pentru 192.168.37.45/20, care sunt rețeaua, broadcastul și intervalul hosturilor?","/20 = mască neomogenă în octetul 3 (255.255.240.0) — octetul „problematic” e al treilea",{plain:"/20 = 255.255.240.0 → al treilea octet are doar 4 biți de rețea → bloc = 256−240 = 16\nRețelele din acel octet cresc din 16 în 16: …16, 32, 48…\nIP-ul 192.168.37.45 are 37 între 32 și 48 → încadrat în blocul 32–47\n\nRețea: 192.168.32.0\nBroadcast: 192.168.47.255\nHosturi valide: 192.168.32.1 – 192.168.47.254"});
+add("retele",47.8,"Care sunt cele patru adrese ale subrețelei 192.168.60.224/30? Există broadcast într-un /30?","/30 are doar 2 biți de host → 4 adrese total, din care 2 utilizabile — folosit tipic pt. legături punct-la-punct (router-router)",{plain:"DA, orice subrețea are broadcast, inclusiv /30 (doar că are foarte puține host-uri utilizabile).\n\n192.168.60.224/30:\nRețea: 192.168.60.224\nHost 1: 192.168.60.225\nHost 2: 192.168.60.226\nBroadcast: 192.168.60.227"});
+add("retele",48,"IPv6 vs IPv4 — diferențe cheie","",{plain:"IPv4: 32 biți (4 grupe a câte 8 biți) → 2³² adrese, aproape epuizate\nIPv6: 128 biți (8 grupe a câte 16 biți) → spațiu de adresare suficient\n\n• La IPv6 se reduce dimensiunea tabelelor de rutare\n• Antetul IPv6 e mai simplu → prelucrare mai rapidă"});
+add("retele",48.5,"Cum decide un echipament dacă destinația unui pachet e în aceeași rețea sau în alta?","operație ȘI logic (AND) între mască și adresa IP — pas obligatoriu înainte de a decide dacă folosește ARP direct sau trimite spre gateway",{plain:"Aplică propria mască de rețea (AND logic) atât peste propria adresă IP, cât și peste adresa IP destinație.\nDacă rezultatele (adresele de rețea) COINCID → destinația e în aceeași rețea (locală).\nDacă rezultatele DIFERĂ → destinația e în altă rețea → pachetul trebuie trimis către gateway."});
+add("retele",49,"ARP — rol + funcționare","",{plain:"Address Resolution Protocol — determină adresa MAC a unui echipament din rețeaua locală, pe baza adresei IP deja cunoscute (nivel 2, dar rezolvă o adresă de nivel 3).\n\nFuncționare: H1 vrea să transmită către IP X, dar nu-i cunoaște MAC-ul (nu e în tabela ARP) → trimite un ARP Request în broadcast în rețea → echipamentul cu IP X răspunde cu un ARP Reply, conținând MAC-ul cerut."});
+add("retele",49.5,"La transmitere, ARP caută MAC-ul destinației sau al gateway-ului?","depinde direct de rezultatul verificării „aceeași rețea vs. altă rețea”",{plain:"Aceeași rețea → ARP caută adresa MAC a DESTINAȚIEI finale (cadrul merge direct la ea).\nAltă rețea → ARP caută adresa MAC a GATEWAY-ULUI (routerului local) — cadrul e trimis către router, care se ocupă mai departe de rutare (IP-ul destinație rămâne neschimbat, doar MAC-ul cadrului e al gateway-ului)."});
+add("retele",50,"DNS — rol","",{plain:"Domain Name System — bază de date distribuită (arhitectură arborescentă) care realizează asocierea NUME DE DOMENIU → ADRESĂ IP. Nivel Aplicație."});
+add("retele",51,"DHCP — rol + pașii (DORA)","",{plain:"Dynamic Host Configuration Protocol — oferă în mod dinamic o configurație de rețea unui echipament: adresă IP, mască, default gateway, server DNS. Nivel Aplicație.\n\nPași (DORA):\nD — Discover: clientul caută un server DHCP (broadcast)\nO — Offer: serverul oferă o adresă, anunțând ce ofertă face\nR — Request: clientul acceptă adresa și cere alocarea ei\nA — Acknowledge: serverul confirmă înregistrarea adresei pentru client"});
+add("retele",51.5,"Ce înseamnă comunicare end-to-end (capăt-la-capăt)?","termen folosit constant la nivelul Transport",{plain:"Comunicare care are loc direct între cele două echipamente FINALE (sursă și destinație), indiferent de câte echipamente intermediare (routere) traversează datele pe parcurs.\nEx: TCP verifică livrarea end-to-end — confirmă (ACK) direct cu aplicația de la celălalt capăt, nu cu fiecare router intermediar."});
+add("retele",52,"TCP — caracteristici","",{plain:"• Orientat pe conexiune (conexiunea se stabilește ÎNAINTE ca datele să fie transmise — three-way handshake)\n• Serviciu fiabil (verifică dacă datele au ajuns la destinație — end-to-end)\n• Segmentare + ordonare + confirmare (ACK)\n• Control flux (fereastră de recepție) + control congestie (reduce cantitatea de date când rețeaua e supraîncărcată)\n• Gestionează retransmisiile prin numărul de secvență\n• Adresare pe bază de porturi"});
+add("retele",53,"UDP — caracteristici","",{plain:"• Serviciu neorientat pe conexiune (fără stabilirea unei conexiuni între sursă și destinație)\n• Nu face retransmisii, nu așteaptă confirmare\n• Transfer nesigur, dar RAPID\n• Fără control de flux, fără control de congestie, fără sincronizare, fără bandă minimă garantată\n• Folosit pentru aplicații în timp real: VoIP, streaming, jocuri\n• Adresare pe bază de porturi"});
+add("retele",53.5,"De ce are UDP overhead mai redus decât TCP?","răspuns structural, nu doar „pentru că e mai simplu”",{plain:"• Antet UDP mult mai mic: doar 8 octeți (port sursă, port destinație, lungime, checksum) față de minimum 20 octeți la TCP\n• Nu ține o conexiune deschisă (fără three-way handshake, fără stare de conexiune de menținut)\n• Nu are câmpuri pentru numere de secvență, confirmări (ACK) sau fereastră de recepție, pentru că nu oferă control de flux/congestie/retransmisie"});
+add("retele",54,"TCP vs UDP — tabel comparativ","",{plain:"TCP: control flux (buffer, receive window) · control congestie (reduce cantitatea de date la supraîncărcare) · transport SIGUR (ACK, așteaptă confirmare) · orientat conexiune (3-way handshake)\nUDP: NU oferă retransmisii · NU face control flux/congestie/erori · transfer nesigur dar rapid · neorientat pe conexiune · pentru aplicații în timp real (VoIP, streaming)"});
+add("retele",54.5,"Diferența de rol: TCP vs IP","confuzie frecventă: TCP și IP lucrează la niveluri diferite, cu roluri complementare",{plain:"IP (nivel Rețea) → adresare LOGICĂ a echipamentelor + alegerea rutei pachetelor între rețele diferite; NU garantează livrarea (best-effort)\nTCP (nivel Transport) → asigură transportul FIABIL al datelor între cele două APLICAȚII/procese finale (segmentare, ordonare, confirmare, retransmisie); folosește adresare pe bază de porturi\n\nPe scurt: IP duce pachetul la echipamentul corect; TCP se asigură că datele ajung complete și în ordine la aplicația corectă."});
+add("retele",55,"Three-way handshake TCP","",{plain:"Stabilirea conexiunii TCP înainte de transferul de date, prin schimbul a 3 mesaje: SYN (sursă→destinație) → SYN-ACK (destinație→sursă) → ACK (sursă→destinație). După aceasta conexiunea e considerată stabilită."});
+add("retele",56,"Socket — definiție","",{plain:"Socket = adresă IP a gazdei + numărul portului. Identifică în mod unic o aplicație/proces de comunicație pe un host.\nExemplu: 192.168.1.10:80 (host : port)"});
+add("retele",57,"Rutare statică vs rutare dinamică","",{plain:"STATICĂ: rute introduse manual de administrator, nu se modifică în timp.\nAvantaj: toate legăturile pot fi controlate.\nDezavantaje: pot apărea erori de configurare manuală, greu de implementat în rețele mari, nu rezolvă automat problemele apărute, scalabilitate slabă.\n\nDINAMICĂ: rute calculate automat prin algoritmi de rutare (protocoale de rutare); caută mereu calea optimă, actualizează automat tabelele.\nDezavantaj: nerecomandată pentru rețele foarte mari (overhead de protocol)."});
+add("retele",58,"RIP — tip, algoritm, metrică, dezavantaje","",{plain:"Routing Information Protocol — protocol de rutare de tip Distance Vector.\nAlgoritm: Bellman-Ford.\nMetrică: numărul de hop-uri (next-hop-uri/noduri intermediare) — cu cât mai mic, cu atât mai bun.\nRIP v1 = classful (lucrează doar cu clasele întregi A/B/C); RIP v2 = classless (lucrează cu subrețele).\nDezavantaj: se bazează pe vecini pentru determinarea numărului de hop-uri → convergență lentă, distanță administrativă = 120."});
+add("retele",59,"OSPF — tip, algoritm, caracteristici","",{plain:"Open Shortest Path First — protocol de rutare de tip Link State.\nAlgoritm: Dijkstra.\nConvergență rapidă (comparativ cu RIP); relație bidirecțională între vecini (mesaje „hello”).\nFiecare router construiește o bază de date a stării legăturilor (LSDB) și o structură ierarhică (arbore), calculând calea cea mai scurtă către rădăcină.\nSuportă algoritmi de criptare (MD5, SHA) pentru securitate."});
+add("retele",60,"BGP — rol","",{plain:"Border Gateway Protocol — bazat pe configurarea sistemelor autonome (AS). Fiecare echipament/grup de echipamente cu același rol aparține unui sistem autonom.\nÎn tabela de rutare, fiecare echipament păstrează sistemele autonome prin care a tranzitat/va tranzita pachetele către destinație.\nDezavantaje: timp de convergență ridicat, memorizarea tuturor căilor, transmitere subotimă."});
+add("retele",61,"Distance Vector vs Link State — diferențe","",{plain:"DISTANCE VECTOR (ex: RIP, algoritm Bellman-Ford):\n• fiecare nod păstrează o tabelă (destinație, cost, next-hop)\n• transmite/primește actualizări DOAR de la vecinii direcți\n• convergență lentă\n\nLINK STATE (ex: OSPF, algoritm Dijkstra):\n• tabela conține informații actualizate despre fiecare legătură din rețea\n• nodurile intermediare transmit către TOATE nodurile (nu doar vecinii) informații despre legăturile direct conectate\n• fiecare router calculează distanța către toate celelalte noduri → convergență rapidă"});
+add("retele",62,"STP — rol","",{plain:"Spanning Tree Protocol (IEEE 802.1D), nivel Legătură de date.\nPermite crearea unei topologii de tip ARBORE FĂRĂ BUCLE, prin blocarea automată a unora dintre interfețele switch-urilor (o interfață poate fi activă sau blocată), până la atingerea convergenței.\nSe alege un switch „rădăcină” (Root Bridge) — cel cu cea mai mică valoare a adresei MAC/prioritate."});
+add("retele",63,"ICMP — rol","",{plain:"Internet Control Message Protocol — folosit pentru transmiterea mesajelor de eroare și diagnosticare în rețelele IP (ex: comanda ping, traceroute).\nIP este „best-effort” (încearcă să livreze pachetele, dar nu garantează livrarea) — ICMP ajută la controlul și diagnosticarea acestui proces."});
+add("retele",64,"HTTP/HTTPS, FTP, Telnet, SSH — porturi și rol","",{plain:"HTTP → acces pagini web, port 80 (implicit)\nHTTPS → HTTP criptat prin TLS\nFTP → transfer fișiere, porturi 20 (date) și 21 (control)\nTelnet → configurare de la distanță, user+parolă, NECRIPTAT (linia poate fi interceptată) — porturile vty 0-4\nSSH → configurare de la distanță, CRIPTAT (înlocuiește Telnet în practică)"});
+add("retele",65,"Viteza de transmisie (rata de bit)","unitate: bps (biți/secundă)",{tex:R`v_t=R_b=\frac{1}{T_b}`});
+add("retele",66,"Viteza de modulație (rata de simbol)","unitate: baud (Bd)",{tex:R`v_m=\frac{1}{T_s}`});
+add("retele",67,"Coduri de linie — relația Tb/Ts pentru fiecare cod","esențial pentru problemele cu viteză telegrafică dată în Baud",{plain:"Cod simplu curent: Tb = Ts (1 bit = 1 simbol)\nManchester: Tb = 2Ts (1 bit = 2 semisimboluri)\nAMI/HDB3: pentru „1” → Tb=2Ts; pentru „0” → Tb=Ts\n2B1Q: 2 biți → 1 cuaternar (Tb = ½Ts)\n4B5B: transmite 4 biți prin intermediul a 5 simboluri (4Tb = 5Ts)"});
+add("retele",68,"Timpul de transmisie (tx)","N = lungimea cadrului (biți), vb = viteza binară",{tex:R`t_x=\frac{N}{v_b}`});
+add("retele",69,"Timpul de propagare (tp)","d = lungimea canalului, vp = viteza de propagare",{tex:R`t_p=\frac{d}{v_p}`});
+add("retele",70,"Viteze de propagare tipice pe medii de transmisie","",{plain:"Cablu UTP → vp ≈ 2·10⁸ m/s\nCablu coaxial → vp ≈ 2·10⁸ m/s\nLinie sudată (fibră) → vp ≈ 3·10⁸ m/s"});
+add("retele",71,"Utilizarea totală a canalului","a mic → propagarea contează puțin; a mare → întâlniri pe canal, ca la satelit",{tex:R`a=\frac{t_p}{t_x}\qquad U=\frac{1}{1+2a}`});
+add("retele",72,"BER și FER — definiții și relația dintre ele","N = dimensiunea maximă a cadrelor (biți); relația e valabilă când FER ≤ 0,1",{tex:R`BER=\frac{\text{biți eronați}}{\text{biți transmiși}}\qquad FER=\frac{\text{cadre eronate}}{\text{cadre transmise}}\approx N\cdot BER`});
+add("retele",73,"Probabilitatea ca un cadru să fie corect / eronat","",{tex:R`P_{corect}=(1-BER)^N\qquad FER=1-(1-BER)^N`});
+add("retele",74,"Viteze Ethernet standard","",{plain:"Ethernet → 10 Mbps\nFast Ethernet → 100 Mbps\nGigabit Ethernet → 1 Gbps"});
+add("retele",75,"Problema jitter — capacitatea minimă de memorie necesară","jitter = variația timpului de sosire a pachetelor; C = capacitatea buffer-ului",{tex:R`C=v_b\cdot t_{jitter}`});
+add("retele",76,"Structura unui plan de adresare complet (echipament/interfață/adrese)","cerut la Subiectul cu schemă de interconectare (9 puncte) — se completează pentru fiecare interfață",{plain:"Pentru fiecare echipament/interfață se completează:\n• Interfața (ex: G0/0, Fa0/1)\n• Adresa IP\n• Masca de rețea\n• Rețeaua (network address)\n• Gateway / Next-hop\n• Adresa MAC"});
+add("retele",77,"Determinarea spațiului de adrese necesar","",{plain:"Se identifică numărul de host-uri necesare pentru fiecare rețea (+ o mică rezervă), apoi se alege cea mai mică mască ce satisface 2^h - 2 ≥ nr. host-uri necesare."});
+add("retele",78,"Exemplu schemă client—router—server cu 2 rețele diferite (recomandare de clase)","din notițe: schema R1–R2 cu switch-uri, host-uri și servere",{plain:"Rețeaua LAN (stânga, client) → clasă C privată, ex: 192.168.47.0/24\nÎntre routere (legătura R1–R2) → clasă B publică, ex: 164.52.0.0/24\nRețeaua din dreapta (servere) → clasă A publică, ex: 54.0.0.0/8\n\nAlegere: rețea locală = privată (nu trebuie rutabilă direct pe Internet); între routere și spre servere = publică."});
+add("retele",79,"PDU dinspre server spre router — adrese complete","cerut explicit în barem: „prezentarea unității de date dinspre server spre ruter cu indicarea corectă a adreselor (MAC, IP, port)”",{plain:"MAC sursă = MAC-ul serverului\nMAC destinație = MAC-ul interfeței routerului (nu al clientului final!)\nIP sursă = IP-ul serverului\nIP destinație = IP-ul final al clientului (rămâne neschimbat pe tot traseul)\nPort sursă = portul aplicației serverului (ex: 80)\nPort destinație = portul clientului (efemer, ex: 50000)"});
+add("retele",80,"PDU dinspre router spre client — adrese complete","",{plain:"MAC sursă = MAC-ul interfeței routerului (spre client)\nMAC destinație = MAC-ul clientului\nIP sursă = IP-ul serverului (neschimbat!)\nIP destinație = IP-ul clientului (neschimbat!)\nPort sursă = portul serverului\nPort destinație = portul clientului\n\n(Observație: doar adresele MAC se schimbă de la un hop la altul; IP-urile și porturile rămân identice pe tot traseul, capăt-la-capăt)"});
+add("retele",81,"Justificarea alegerii claselor de adrese într-o schemă de rețea","",{plain:"Rețea locală (LAN) → clasă privată (10.x/172.16-31.x/192.168.x) — nu are nevoie să fie rutabilă direct pe Internet, accesul se face prin gateway (NAT)\nRețele publice/între routere → clasă publică — trebuie să fie unic identificabile și rutabile pe Internet\nAlegerea claselor se justifică prin numărul de host-uri necesare (spațiul de adrese) și prin caracterul public/privat al rețelei respective"});
+
+/* ================= APLICAȚIE ================= */
+const STORAGE_KEY = "formulaSimStats_v1";
+let statsStore = {};
+try{ statsStore = JSON.parse(localStorage.getItem(STORAGE_KEY) || "{}"); }catch(e){ statsStore = {}; }
+function saveStats(){ try{ localStorage.setItem(STORAGE_KEY, JSON.stringify(statsStore)); }catch(e){} }
+function getStat(id){ return statsStore[id] || (statsStore[id] = {correct:0, wrong:0}); }
+function isMastered(id){ const s = getStat(id); return (s.correct - s.wrong) >= 2; }
+
+const HIDDEN_KEY = "formulaSimHidden_v1";
+let hiddenSet = new Set();
+try{ hiddenSet = new Set(JSON.parse(localStorage.getItem(HIDDEN_KEY) || "[]")); }catch(e){ hiddenSet = new Set(); }
+function saveHidden(){ try{ localStorage.setItem(HIDDEN_KEY, JSON.stringify([...hiddenSet])); }catch(e){} }
+function updateHiddenInfo(){
+  const el = document.getElementById("hiddenInfo");
+  if(!el) return;
+  if(hiddenSet.size>0){
+    el.style.display = "flex";
+    document.getElementById("hiddenCount").textContent =
+      (hiddenSet.size===1 ? "1 formulă ascunsă" : hiddenSet.size + " formule ascunse") + " permanent";
+  } else {
+    el.style.display = "none";
+  }
+}
+function hideCurrent(){
+  if(currentId==null) return;
+  hiddenSet.add(currentId);
+  saveHidden();
+  updateHiddenInfo();
+  renderCategoryChips();
+  nextCard();
+}
+
+const MODE_KEY = "formulaSimMode_v1";
+let promptMode = "meaning";
+try{ promptMode = localStorage.getItem(MODE_KEY) || "meaning"; }catch(e){ promptMode = "meaning"; }
+function setMode(m){
+  promptMode = m;
+  try{ localStorage.setItem(MODE_KEY, m); }catch(e){}
+  document.querySelectorAll('.mode-btn').forEach(b=>{
+    b.classList.toggle('active', b.dataset.mode===m);
+  });
+  if(currentId!==null){ revealed = false; renderCard(); }
+}
+
+let activeCats = new Set(CATEGORIES.map(c=>c.key));
+let tierGroups = [];      // array of {tier, cards:[ids in shuffled order]}
+let tierIndex = 0;
+let queue = [];           // current tier's remaining ids
+let currentId = null;
+let revealed = false;
+let sessionSeen = 0, sessionCorrect = 0, sessionWrong = 0;
+
+function shuffle(arr){
+  const a = arr.slice();
+  for(let i=a.length-1;i>0;i--){
+    const j = Math.floor(Math.random()*(i+1));
+    [a[i],a[j]] = [a[j],a[i]];
+  }
+  return a;
+}
+
+function buildDeck(pool){
+  const byTier = {};
+  pool.forEach(f=>{
+    const t = Math.ceil(f.p/15);
+    (byTier[t] = byTier[t]||[]).push(f.id);
+  });
+  const tiers = Object.keys(byTier).map(Number).sort((a,b)=>a-b);
+  tierGroups = tiers.map(t=>({tier:t, cards:shuffle(byTier[t])}));
+  tierIndex = 0;
+  queue = tierGroups.length ? tierGroups[0].cards.slice() : [];
+}
+
+function currentPool(){
+  return FORMULAS.filter(f=>activeCats.has(f.cat) && !hiddenSet.has(f.id));
+}
+
+function resetDeck(){
+  buildDeck(currentPool());
+  nextCard();
+}
+
+function nextCard(){
+  revealed = false;
+  while(queue.length===0 && tierIndex < tierGroups.length-1){
+    tierIndex++;
+    queue = tierGroups[tierIndex].cards.slice();
+  }
+  if(queue.length===0){
+    currentId = null;
+    renderFinished();
+    return;
+  }
+  currentId = queue.shift();
+  sessionSeen++;
+  renderCard();
+  updateProgress();
+  updateStats();
+}
+
+function requeueCurrent(){
+  if(currentId==null) return;
+  // put it back at the end of this tier's active run so it resurfaces before moving on
+  queue.push(currentId);
+}
+
+function catInfo(key){ return CATEGORIES.find(c=>c.key===key); }
+
+function formulaStart(f){
+  const src = f.tex || f.plain || "";
+  const tokens = ['\\geq','\\leq','\\Rightarrow','\\approx','=','<','>'];
+  let depth = 0;
+  for(let i=0;i<src.length;i++){
+    const ch = src[i];
+    if(ch === '{') depth++;
+    else if(ch === '}') depth--;
+    if(depth === 0){
+      for(const t of tokens){
+        if(src.startsWith(t, i)) return src.slice(0, i+t.length);
+      }
+    }
+  }
+  return null;
+}
+
+function renderCard(){
+  const f = FORMULAS.find(x=>x.id===currentId);
+  const ci = catInfo(f.cat);
+  const mastered = isMastered(f.id);
+  const start = promptMode==="start" ? formulaStart(f) : null;
+  const useStart = start!==null;
+  document.getElementById("card").innerHTML = `
+    <div class="card-top">
+      <span class="tier-tag">Nivel ${Math.ceil(f.p/15)} · prioritate #${f.p} în fișierul "${f.cat}"${mastered?' · ⭐ stăpânită':''}</span>
+      <button class="btn-hide" id="btnHideFormula" title="Nu mai arăta niciodată această formulă">🚫 Nu o mai arăta</button>
+    </div>
+    <div class="card-cat" style="color:${ci.color}">${ci.label}</div>
+    <div class="prompt-label">${useStart ? "Formula începe cu:" : "Formula pentru:"}</div>
+    ${f.cond ? `<div class="condition">${f.cond}</div>` : ""}
+    ${useStart
+      ? (f.tex ? `<div class="meaning start-hint" id="startHolder"></div>` : `<div class="meaning plain-formula start-hint">${start}</div>`)
+      : `<div class="meaning">${f.meaning}</div>`
+    }
+    ${f.note ? `<div class="hint-note">${f.note}</div>` : ""}
+    <div class="divider"></div>
+    <div class="reveal-box" id="revealBox">
+      <div class="formula-box">
+        ${f.tex ? `<div id="mathHolder"></div>` : `<div class="plain-formula">${f.plain}</div>`}
+      </div>
+      ${f.note ? `<div class="note-box"><b>Observație:</b> ${f.note}</div>` : ""}
+    </div>
+    <div class="controls" id="controlsBox"></div>
+  `;
+  if(useStart && f.tex){
+    try{
+      katex.render(start, document.getElementById("startHolder"), {throwOnError:false, displayMode:false, strict:false});
+    }catch(e){
+      document.getElementById("startHolder").textContent = start;
+    }
+  }
+  if(f.tex){
+    try{
+      katex.render(f.tex, document.getElementById("mathHolder"), {throwOnError:false, displayMode:true, strict:false});
+    }catch(e){
+      document.getElementById("mathHolder").textContent = f.tex;
+    }
+  }
+  document.getElementById("btnHideFormula").onclick = hideCurrent;
+  renderControlsBefore();
+}
+
+function renderControlsBefore(){
+  document.getElementById("controlsBox").innerHTML = `
+    <button class="btn btn-main" id="btnShow">📖 Vezi formula</button>
+    <button class="btn btn-skip" id="btnSkip">⏭ Sări</button>
+  `;
+  document.getElementById("btnShow").onclick = showFormula;
+  document.getElementById("btnSkip").onclick = ()=>{ requeueCurrent(); nextCard(); };
+}
+
+function showFormula(){
+  revealed = true;
+  document.getElementById("revealBox").classList.add("show");
+  document.getElementById("controlsBox").innerHTML = `
+    <button class="btn btn-good" id="btnGood">✅ Știam</button>
+    <button class="btn btn-bad" id="btnBad">❌ Nu știam</button>
+    <button class="btn btn-skip" id="btnSkip2">⏭ Sări</button>
+  `;
+  document.getElementById("btnGood").onclick = ()=>{ markAnswer(true); };
+  document.getElementById("btnBad").onclick = ()=>{ markAnswer(false); };
+  document.getElementById("btnSkip2").onclick = ()=>{ requeueCurrent(); nextCard(); };
+}
+
+function markAnswer(ok){
+  const s = getStat(currentId);
+  if(ok){ s.correct++; sessionCorrect++; }
+  else { s.wrong++; sessionWrong++; requeueCurrent(); }
+  saveStats();
+  nextCard();
+}
+
+function renderFinished(){
+  document.getElementById("card").innerHTML = `
+    <div class="finished">
+      <h2>🎉 Ai terminat toate formulele active!</h2>
+      <p style="color:var(--muted)">Sesiune: ${sessionCorrect} știute, ${sessionWrong} de revizuit din ${sessionSeen} carduri.</p>
+      <div style="display:flex; gap:10px; justify-content:center; flex-wrap:wrap; margin-top:16px;">
+        <button class="btn btn-main" id="btnRestartAll" style="flex:0 0 auto;">🔀 Reia toate (amestecat)</button>
+        <button class="btn btn-bad" id="btnWeakOnly" style="flex:0 0 auto;">🎯 Exersează doar cele slabe</button>
+      </div>
+    </div>
+  `;
+  document.getElementById("btnRestartAll").onclick = resetDeck;
+  document.getElementById("btnWeakOnly").onclick = ()=>{
+    const weak = currentPool().filter(f=>!isMastered(f.id));
+    if(weak.length===0){ alert("Nu ai formule slabe în categoriile active — toate sunt stăpânite! 🎉"); return; }
+    buildDeck(weak);
+    nextCard();
+  };
+  updateProgress();
+}
+
+function updateProgress(){
+  if(tierGroups.length===0){
+    document.getElementById("tierLabel").textContent = "—";
+    document.getElementById("tierCount").textContent = "—";
+    document.getElementById("tierBar").style.width = "0%";
+    return;
+  }
+  if(currentId===null){
+    document.getElementById("tierLabel").textContent = "Deck epuizat";
+    document.getElementById("tierCount").textContent = `${sessionSeen} carduri parcurse`;
+    document.getElementById("tierBar").style.width = "100%";
+    return;
+  }
+  const tg = tierGroups[tierIndex];
+  const initial = tg.cards.length; // fixed size of this tier's original (shuffled) pool
+  document.getElementById("tierLabel").textContent = `Nivel ${tg.tier} (prioritate ${(tg.tier-1)*15+1}–${tg.tier*15})`;
+  document.getElementById("tierCount").textContent = `${queue.length+1} rămase în nivel · nivel ${tierIndex+1}/${tierGroups.length}`;
+  const pct = Math.max(0, Math.min(100, Math.round(((initial-(queue.length+1))/initial)*100)));
+  document.getElementById("tierBar").style.width = pct+"%";
+}
+
+function updateStats(){
+  document.getElementById("statSeen").textContent = sessionSeen;
+  document.getElementById("statCorrect").textContent = sessionCorrect;
+  document.getElementById("statWrong").textContent = sessionWrong;
+  const relevant = FORMULAS.filter(f=>!hiddenSet.has(f.id));
+  const masteredCount = relevant.filter(f=>isMastered(f.id)).length;
+  document.getElementById("statMastered").textContent = masteredCount + " / " + relevant.length;
+}
+
+function renderCategoryChips(){
+  const el = document.getElementById("catList");
+  el.innerHTML = CATEGORIES.map(c=>{
+    const count = FORMULAS.filter(f=>f.cat===c.key && !hiddenSet.has(f.id)).length;
+    const checked = activeCats.has(c.key) ? "checked" : "";
+    const off = activeCats.has(c.key) ? "" : "off";
+    return `
+      <label class="cat-chip ${off}" data-key="${c.key}">
+        <span class="cat-dot" style="background:${c.color}"></span>
+        <input type="checkbox" ${checked} data-key="${c.key}">
+        ${c.label} <span style="color:var(--muted)">(${count})</span>
+      </label>
+    `;
+  }).join("");
+  el.querySelectorAll('input[type=checkbox]').forEach(cb=>{
+    cb.addEventListener('change', ()=>{
+      const key = cb.dataset.key;
+      if(cb.checked) activeCats.add(key); else activeCats.delete(key);
+      cb.closest('.cat-chip').classList.toggle('off', !cb.checked);
+      resetDeck();
+    });
+  });
+}
+
+document.getElementById("btnAll").onclick = ()=>{
+  activeCats = new Set(CATEGORIES.map(c=>c.key));
+  document.querySelectorAll('#catList input').forEach(cb=>{cb.checked=true; cb.closest('.cat-chip').classList.remove('off');});
+  resetDeck();
+};
+document.getElementById("btnNone").onclick = ()=>{
+  activeCats = new Set();
+  document.querySelectorAll('#catList input').forEach(cb=>{cb.checked=false; cb.closest('.cat-chip').classList.add('off');});
+  document.getElementById("card").innerHTML = `<div class="finished"><h2>Selectează cel puțin o categorie</h2></div>`;
+  tierGroups=[]; queue=[]; currentId=null;
+  updateProgress();
+};
+document.getElementById("btnReset").onclick = resetDeck;
+document.getElementById("btnUnhide").onclick = ()=>{
+  hiddenSet.clear();
+  saveHidden();
+  updateHiddenInfo();
+  renderCategoryChips();
+  resetDeck();
+};
+
+document.addEventListener("keydown", (e)=>{
+  if(e.code==="Space"){
+    e.preventDefault();
+    if(currentId===null) return;
+    if(!revealed) showFormula(); else nextCard();
+  } else if(e.key==="1" && revealed){ markAnswer(true); }
+  else if(e.key==="2" && revealed){ markAnswer(false); }
+  else if(e.key==="0" && currentId!==null){ requeueCurrent(); nextCard(); }
+});
+
+document.querySelectorAll('.mode-btn').forEach(b=>{
+  b.classList.toggle('active', b.dataset.mode===promptMode);
+  b.addEventListener('click', ()=> setMode(b.dataset.mode));
+});
+
+renderCategoryChips();
+updateHiddenInfo();
+resetDeck();
+
+</script>
+</body>
+</html>
